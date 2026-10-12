@@ -154,7 +154,8 @@ async function recorded(
 }
 
 async function refreshNavs(): Promise<Outcome> {
-  const response = await download(AMFI_URL);
+  // The file is a few MB and AMFI is sometimes slow at night.
+  const response = await download(AMFI_URL, 60_000);
   if (!response.ok) return { status: "failed", message: `AMFI responded ${response.status}` };
   const { rows, latestDate } = parseAmfi(await response.text());
   if (rows.length < 1000) {

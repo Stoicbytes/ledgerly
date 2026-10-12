@@ -86,7 +86,8 @@ const decimal = (value: string | undefined, places: number): number | null => {
  *   "Open Ended Schemes(Equity Scheme - Large Cap Fund)"   ← category
  *   "Axis Mutual Fund"                                     ← fund house
  *   "120465;INF846K01DP8;-;Axis Bluechip Fund - Direct Plan - Growth;58.1200;07-Oct-2026"
- * separated by blank lines. NAV can be "N.A." for schemes that did not publish one.
+ * separated by blank lines. Since 2026 the name is split into Scheme Name;Plan;Option:
+ *   "129008;INF090I01KR8;-;Franklin India Banking & PSU Debt Fund;Direct Plan;Growth;25.3336;12-Oct-2026" NAV can be "N.A." for schemes that did not publish one.
  */
 export function parseAmfi(text: string): { rows: SchemeRow[]; latestDate: string | null } {
   const rows: SchemeRow[] = [];
@@ -101,11 +102,14 @@ export function parseAmfi(text: string): { rows: SchemeRow[]; latestDate: string
       const parts = line.split(";").map((part) => part.trim());
       if (parts.length < 6 || !/^\d{1,9}$/.test(parts[0])) continue;
       const code = Number(parts[0]);
-      const name = parts[3].replace(/\s+/g, " ").slice(0, 200);
+      // NAV and date are always the last two columns; everything between the ISINs and
+      // them names the scheme (older files: one name column; newer: name, Plan, Option).
+      const nameParts = parts.slice(3, -2).filter(Boolean);
+      const name = nameParts.join(" - ").replace(/\s+/g, " ").slice(0, 200);
       if (!code || !name || seen.has(code)) continue;
       seen.add(code);
-      const navDate = toIsoDate(parts[5]);
-      const nav = decimal(parts[4], 4);
+      const navDate = toIsoDate(parts[parts.length - 1]);
+      const nav = decimal(parts[parts.length - 2], 4);
       if (navDate && nav && (!latestDate || navDate > latestDate)) latestDate = navDate;
       rows.push({
         scheme_code: code,
