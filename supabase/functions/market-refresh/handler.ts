@@ -26,7 +26,8 @@ function settings() {
 }
 
 const USER_AGENT = "Mozilla/5.0 (compatible; Ledgerly/1.0; StoicBytes)";
-const AMFI_URL = "https://www.amfiindia.com/spages/NAVAll.txt";
+// AMFI's current address; www.amfiindia.com redirects here.
+const AMFI_URL = "https://portal.amfiindia.com/spages/NAVAll.txt";
 const nseUrl = (ymd: string) =>
   `https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_${ymd}_F_0000.csv.zip`;
 const bseUrl = (ymd: string) =>
@@ -154,8 +155,9 @@ async function recorded(
 }
 
 async function refreshNavs(): Promise<Outcome> {
-  // The file is a few MB and AMFI is sometimes slow at night.
-  const response = await download(AMFI_URL, 60_000);
+  // The file is a few MB and AMFI can be slow from Supabase's servers; it runs alongside the
+  // exchange prices, so this fits within the function's 150-second limit.
+  const response = await download(AMFI_URL, 100_000);
   if (!response.ok) return { status: "failed", message: `AMFI responded ${response.status}` };
   const { rows, latestDate } = parseAmfi(await response.text());
   if (rows.length < 1000) {
@@ -275,19 +277,20 @@ async function refresh(caller: Caller) {
   if (running) return { navs: { status: "current" }, prices: { status: "current" }, busy: true };
   const force = caller.kind === "schedule";
 
-  const navs = !force && isCurrent(status.amfi, today, now)
-    ? { status: "current" as const }
-    : await recorded("amfi", caller, refreshNavs);
-
-  let prices: Outcome;
-  if (!force && (isCurrent(status.nse, today, now) || isCurrent(status.bse, today, now))) {
-    prices = { status: "current" };
-  } else {
-    prices = await recorded("nse", caller, () => refreshPrices("NSE", today));
-    if (prices.status === "failed") {
-      prices = await recorded("bse", caller, () => refreshPrices("BSE", today));
+  // NAVs and exchange prices come from different servers, so they download at the same time.
+  const navsTask: Promise<Outcome> = !force && isCurrent(status.amfi, today, now)
+    ? Promise.resolve({ status: "current" })
+    : recorded("amfi", caller, refreshNavs);
+  const pricesTask = (async (): Promise<Outcome> => {
+    if (!force && (isCurrent(status.nse, today, now) || isCurrent(status.bse, today, now))) {
+      return { status: "current" };
     }
-  }
+    const nse = await recorded("nse", caller, () => refreshPrices("NSE", today));
+    return nse.status === "failed"
+      ? await recorded("bse", caller, () => refreshPrices("BSE", today))
+      : nse;
+  })();
+  const [navs, prices] = await Promise.all([navsTask, pricesTask]);
 
   const needed = await schemesNeedingHistory(caller);
   const history = needed.length
