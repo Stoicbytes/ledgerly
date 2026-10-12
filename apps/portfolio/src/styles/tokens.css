@@ -1,0 +1,95 @@
+/*
+ * Design tokens. One dark theme: deep ink surfaces, hairline structure, warm "ember"
+ * as the single accent (projects may pick one of five companions), and three typefaces
+ * with clear jobs: Geist for reading, Geist Mono for system labels, Instrument Serif
+ * italic for the occasional human accent.
+ */
+:root {
+  color-scheme: dark;
+
+  --ink-0: #07080a;
+  --ink-1: #0b0d10;
+  --ink-2: #111318;
+  --ink-3: #171a20;
+  --ink-4: #1f232b;
+  --line: rgb(236 240 247 / 7%);
+  --line-2: rgb(236 240 247 / 12%);
+  --line-3: rgb(236 240 247 / 20%);
+
+  --text: #eceff4;
+  --text-2: #a5acb8;
+  --text-3: #7b8391;
+
+  --ember: #ff7a45;
+  --ember-2: #ff9a6e;
+  --ember-ink: #1c0d05;
+  --ember-glow: rgb(255 122 69 / 16%);
+  --ion: #8fb3ff;
+  --lime: #b9e769;
+  --violet: #b8a1ff;
+  --rose: #ff8fab;
+  --sand: #e7cb92;
+  --ok: #7fdca4;
+  --warn: #f5c56b;
+
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --fs-md: clamp(1.0625rem, 1rem + 0.3vw, 1.25rem);
+  --fs-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
+  --fs-xl: clamp(1.5rem, 1.25rem + 1.1vw, 2.25rem);
+  --fs-2xl: clamp(2rem, 1.5rem + 2.2vw, 3.5rem);
+  --fs-3xl: clamp(2.5rem, 1.6rem + 4vw, 5.25rem);
+  --fs-display: clamp(3.4rem, 0.9rem + 11.2vw, 11.5rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --section-gap: clamp(5rem, 3.5rem + 7vw, 11rem);
+
+  --gutter: clamp(16px, 4vw, 56px);
+  --max: 1360px;
+  --header-h: 64px;
+
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --t-fast: 160ms;
+  --t: 320ms;
+  --t-slow: 700ms;
+  --t-reveal: 900ms;
+}
+
+[data-accent='ember'] {
+  --accent: var(--ember);
+}
+[data-accent='ion'] {
+  --accent: var(--ion);
+}
+[data-accent='lime'] {
+  --accent: var(--lime);
+}
+[data-accent='violet'] {
+  --accent: var(--violet);
+}
+[data-accent='rose'] {
+  --accent: var(--rose);
+}
+[data-accent='sand'] {
+  --accent: var(--sand);
+}

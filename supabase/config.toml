@@ -1,0 +1,8 @@
+# Supabase CLI settings, used when deploying Edge Functions (`supabase functions deploy`).
+# The database is changed through the SQL files in migrations/ (see SUPABASE_SETUP.md).
+project_id = "ledgerly"
+
+[functions.market-refresh]
+# The function checks its callers itself: the daily schedule's secret, or a signed-in
+# user's access token.
+verify_jwt = false

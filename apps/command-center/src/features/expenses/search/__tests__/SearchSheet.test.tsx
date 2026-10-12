@@ -1,0 +1,58 @@
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { accounts, categories, transactions } from '@/lib/domain/expenses/__fixtures__/ledger';
+import { renderWithProviders } from '@/test/render';
+import { saveCsv } from '../../export/saveCsv';
+import { useExpenseStore } from '../../state/expenseStore';
+import { useSearchStore } from '../../state/searchStore';
+import { periodRange } from '../SearchFilterChips';
+import { SearchSheet } from '../SearchSheet';
+
+jest.mock('../../export/saveCsv', () => ({ saveCsv: jest.fn(async () => undefined) }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useExpenseStore.getState().restoreLedger({ accounts, categories, transactions, people: [] });
+  useSearchStore.getState().clear();
+  useSearchStore.getState().show();
+});
+
+describe('SearchSheet', () => {
+  it('finds entries by word, with totals', async () => {
+    await renderWithProviders(<SearchSheet />);
+    expect(screen.getByText('Search your entries')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Search'), 'tea');
+    expect(screen.getByText('2 entries · spent ₹90 · received ₹0')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Search'), 'nothing-like-this');
+    expect(screen.getByText('Nothing found')).toBeTruthy();
+  });
+
+  it('filters by type and category chips', async () => {
+    await renderWithProviders(<SearchSheet />);
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Expenses' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Rent' }));
+    expect(screen.getByText('1 entry · spent ₹10,000 · received ₹0')).toBeTruthy();
+  });
+
+  it('exports every entry, or only the results, as CSV', async () => {
+    await renderWithProviders(<SearchSheet />);
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Export all' }));
+    });
+    const [csv, name] = jest.mocked(saveCsv).mock.calls[0];
+    expect(csv.trim().split('\r\n')).toHaveLength(transactions.length + 1);
+    expect(name).toMatch(/^expenses-\d{4}-\d{2}-\d{2}\.csv$/);
+    await fireEvent.changeText(screen.getByLabelText('Search'), 'lunch');
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Export results' }));
+    });
+    expect(jest.mocked(saveCsv).mock.calls[1][0].trim().split('\r\n')).toHaveLength(2);
+    expect(screen.getByText('Exported 1 entry')).toBeTruthy();
+  });
+
+  it('turns period chips into dates', () => {
+    expect(periodRange('month', '2026-10-11')).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    expect(periodRange('three', '2026-01-15')).toEqual({ from: '2025-11-01', to: '2026-01-31' });
+    expect(periodRange('lastYear', '2026-10-11')).toEqual({ from: '2025-01-01', to: '2025-12-31' });
+    expect(periodRange('any')).toEqual({ from: null, to: null });
+  });
+});

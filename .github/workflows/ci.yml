@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge-functions:
+    name: Edge functions (Deno)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Format
+        run: deno fmt --check
+      - name: Lint
+        run: deno lint
+      - name: Typecheck
+        run: deno check market-refresh/*.ts
+      - name: Tests (network and database replaced by fakes)
+        run: deno test --allow-env --no-prompt
+
+  command-center:
+    name: Ledgerly app (Expo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/command-center/package-lock.json
+            apps/portfolio/package-lock.json
+      - run: npm ci
+      - name: No secret-looking public variables
+        # EXPO_PUBLIC_* values are embedded in the app bundle; secrets must never use that prefix.
+        run: |
+          if grep -rEn 'EXPO_PUBLIC_[A-Z0-9_]*(SECRET|SERVICE|PRIVATE)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.json' --include='.env*' --exclude-dir=node_modules --exclude-dir=dist .; then
+            echo "A public (EXPO_PUBLIC_) variable name looks like a secret." >&2
+            exit 1
+          fi
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npx eslint . --max-warnings 0
+      - name: Format
+        run: npm run format:check
+      - name: Unit and component tests
+        run: npm run test:ci
+      - name: Web build
+        run: npm run build:web
+      - name: Web bundle size
+        run: npm run check:bundle
+      - name: Portfolio at / (the same build step as Vercel)
+        run: npm run build:site
+      - name: Portfolio at / responds
+        run: npm run check:site
+      - name: Expo doctor
+        # Two checks need Expo's online services and could not be verified in the
+        # authoring environment; make this blocking once it is confirmed green here.
+        continue-on-error: true
+        run: npx expo-doctor
+
+  portfolio:
+    name: Portfolio site (Vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/portfolio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/portfolio/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Format
+        run: npm run format:check
+      - name: Tests
+        run: npm test
+      - name: Build (browser and server bundles)
+        run: npm run build
+      - name: Bundle size
+        run: npm run check:bundle

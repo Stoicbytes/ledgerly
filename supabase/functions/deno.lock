@@ -1,0 +1,11 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:fflate@0.8.2": "0.8.2"
+  },
+  "npm": {
+    "fflate@0.8.2": {
+      "integrity": "sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A=="
+    }
+  }
+}

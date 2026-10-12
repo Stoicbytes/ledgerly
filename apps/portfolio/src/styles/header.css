@@ -1,0 +1,315 @@
+.site-header {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--t) var(--ease-out);
+}
+
+.site-header.is-scrolled,
+.site-header.is-open {
+  border-bottom-color: var(--line);
+}
+
+/*
+ * The frosted background sits on a layer behind the bar, not on the header itself: a
+ * backdrop-filter on the header would make it the containing block of the fixed phone
+ * menu, which Safari then squeezes into the header's own height.
+ */
+.site-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgb(7 8 10 / 76%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  opacity: 0;
+  transition: opacity var(--t) var(--ease-out);
+  pointer-events: none;
+}
+
+.site-header.is-scrolled::before,
+.site-header.is-open::before {
+  opacity: 1;
+}
+
+.site-header__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: var(--header-h);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  min-width: 0;
+}
+
+.brand__mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-2);
+  border-radius: 11px;
+  background: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.brand__mark::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ember);
+  box-shadow: 0 0 0 3px var(--ink-0);
+}
+
+.brand__name {
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.site-nav {
+  position: relative;
+  display: none;
+  margin-left: auto;
+}
+
+.site-nav ul {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: rgb(17 19 24 / 55%);
+}
+
+.site-nav a {
+  position: relative;
+  z-index: 1;
+  display: block;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  transition: color var(--t-fast) ease;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current] {
+  color: var(--text);
+}
+
+.site-nav__indicator {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 0;
+  height: calc(100% - 10px);
+  border-radius: var(--radius-pill);
+  background: var(--ink-4);
+  opacity: 0;
+  transition:
+    transform 0.5s var(--ease-out),
+    width 0.5s var(--ease-out),
+    opacity var(--t) ease;
+}
+
+.site-header .site-header__status {
+  display: none;
+}
+
+.site-header__dashboard,
+.mobile-menu__dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  transition: color var(--t-fast) ease;
+}
+
+.site-header__dashboard:hover,
+.mobile-menu__dashboard:hover {
+  color: var(--text);
+}
+
+/* Desktop: a small pill at the end of the bar. Phones: the last line of the menu. */
+.site-header__dashboard {
+  display: none;
+  flex: none;
+  padding: 8px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill);
+  background: rgb(17 19 24 / 55%);
+}
+
+.availability {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.availability__time {
+  color: var(--text-3);
+}
+
+.menu-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
+.menu-button__lines,
+.menu-button__lines::before,
+.menu-button__lines::after {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--text);
+  transition:
+    transform var(--t) var(--ease-out),
+    opacity var(--t-fast) ease;
+}
+
+.menu-button__lines {
+  position: relative;
+}
+
+.menu-button__lines::before,
+.menu-button__lines::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.menu-button__lines::before {
+  transform: translateY(-5px);
+}
+
+.menu-button__lines::after {
+  transform: translateY(5px);
+}
+
+.menu-button[aria-expanded='true'] .menu-button__lines {
+  background: transparent;
+}
+
+.menu-button[aria-expanded='true'] .menu-button__lines::before {
+  transform: rotate(45deg);
+}
+
+.menu-button[aria-expanded='true'] .menu-button__lines::after {
+  transform: rotate(-45deg);
+}
+
+.mobile-menu {
+  position: fixed;
+  inset: calc(var(--header-h) + env(safe-area-inset-top)) 0 0;
+  overflow-y: auto;
+  padding: var(--space-5) 0 calc(var(--space-7) + env(safe-area-inset-bottom));
+  background: var(--ink-0);
+}
+
+.mobile-menu[hidden] {
+  display: none;
+}
+
+.mobile-menu nav {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.mobile-menu__list {
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-menu__list a {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.9rem, 8vw, 3rem);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+}
+
+.mobile-menu__list a .arrow {
+  margin-left: auto;
+  align-self: center;
+  color: var(--text-3);
+}
+
+html[data-motion='ready'] .mobile-menu:not([hidden]) li {
+  animation: menu-in 0.6s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.mobile-menu__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 0;
+}
+
+html.menu-open {
+  overflow: hidden;
+}
+
+@media (min-width: 960px) {
+  .site-nav {
+    display: block;
+  }
+  .menu-button,
+  .mobile-menu {
+    display: none !important;
+  }
+  .site-header .site-header__dashboard {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 1240px) {
+  .site-header .site-header__status {
+    display: inline-flex;
+    margin-left: var(--space-2);
+  }
+}
