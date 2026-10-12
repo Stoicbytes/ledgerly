@@ -62,6 +62,43 @@ Deno.test("parseAmfi reads schemes with their category and fund house", () => {
   strictEqual(rows[3].fund_house, "Summit Mutual Fund");
 });
 
+// The layout since 2026: Plan and Option columns before the NAV (fund names are fictional).
+const AMFI_WITH_PLAN = [
+  "Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;Net Asset Value;Date",
+  " ",
+  "Open Ended Schemes(Debt Scheme - Banking and PSU Fund)",
+  " ",
+  "Horizon Mutual Fund",
+  " ",
+  "129008;INF090I01KR8;-;Horizon Banking & PSU Debt Fund;Direct Plan;Growth;25.3336;12-Oct-2026",
+  "129009;INF090I01KS6;INF090I01KT4;Horizon Banking & PSU Debt Fund;Direct Plan;IDCW;11.4637;12-Oct-2026",
+  "123689;INF174K01KI5;INF174K01KJ3;Horizon Banking & PSU Debt Fund;Direct Plan;Annual Dividend;17.1427;15-Sep-2017",
+  "130947;INF109KA1I84;-;Horizon Corporate Bond Fund;;;N.A.;12-Oct-2026",
+].join("\r\n");
+
+Deno.test("parseAmfi reads the layout with Plan and Option columns", () => {
+  const { rows, latestDate } = parseAmfi(AMFI_WITH_PLAN);
+  strictEqual(rows.length, 4);
+  strictEqual(latestDate, "2026-10-12");
+  deepStrictEqual(rows[0], {
+    scheme_code: 129008,
+    name: "Horizon Banking & PSU Debt Fund - Direct Plan - Growth",
+    fund_house: "Horizon Mutual Fund",
+    category: "Debt Scheme - Banking and PSU Fund",
+    isin_growth: "INF090I01KR8",
+    isin_reinvest: null,
+    nav: 25.3336,
+    nav_date: "2026-10-12",
+  });
+  strictEqual(rows[1].isin_reinvest, "INF090I01KT4");
+  strictEqual(rows[1].nav, 11.4637);
+  // A scheme that stopped publishing keeps its own (old) date.
+  strictEqual(rows[2].nav_date, "2017-09-15");
+  // Empty Plan and Option are left out of the name; N.A. → no NAV.
+  strictEqual(rows[3].name, "Horizon Corporate Bond Fund");
+  strictEqual(rows[3].nav, null);
+});
+
 Deno.test("parseAmfi returns nothing for an unrelated file", () => {
   deepStrictEqual(parseAmfi("<html>blocked</html>"), { rows: [], latestDate: null });
 });
