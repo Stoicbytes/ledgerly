@@ -272,6 +272,17 @@ export function safeEqual(a: string, b: string): boolean {
 }
 
 /**
+ * Web addresses allowed when the ALLOWED_ORIGINS secret is not set: the production
+ * addresses, every deployment of the Vercel project, and local development.
+ */
+export const DEFAULT_ORIGINS = [
+  "https://ledgerly.vercel.app",
+  "https://ledgerly-stoicbytes-developers-team.vercel.app",
+  "https://ledgerly-*-stoicbytes-developers-team.vercel.app",
+  "http://localhost:8081",
+];
+
+/**
  * Whether a browser origin may call the function. An entry may hold one "*", which stands
  * for letters, digits and hyphens only (one part of a host name, never a dot), so
  * "https://app-*-team.vercel.app" admits that project's preview deployments and nothing else.

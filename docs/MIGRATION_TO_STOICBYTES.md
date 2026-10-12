@@ -43,7 +43,7 @@ new repository instead of transferring the old one.
    Settings → General → Transfer).
 2. Rename the project to `ledgerly`, which gives `https://ledgerly.vercel.app` if the name is free
    (otherwise use the address Vercel gives, or a custom domain).
-3. Settings → Git → disconnect the old repository and connect `stoicbytes-studio/ledgerly`.
+3. Settings → Git → disconnect the old repository and connect `Stoicbytes/ledgerly`.
 4. Check the environment variables: `EXPO_PUBLIC_SUPABASE_URL`,
    `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `PORTFOLIO_HANDLE` (and `SITE_URL` if used).
 5. Redeploy with the build cache turned off.
@@ -53,14 +53,14 @@ new repository instead of transferring the old one.
 1. Authentication → URL Configuration: Site URL `https://ledgerly.vercel.app` (or your domain); add
    `https://ledgerly.vercel.app/reset-password` and `/dashboard/settings` (the email-change link
    returns there) to the redirect URLs. Remove the old addresses once the new site works.
-2. Edge Functions → Secrets: set `ALLOWED_ORIGINS` if the site is not exactly
-   `https://ledgerly.vercel.app`, for example
-   `https://your-domain.com,https://ledgerly-*-<team>.vercel.app,http://localhost:8081`.
+2. The price function already accepts the Vercel project's addresses (see `ALLOWED_ORIGINS` in
+   `SUPABASE_SETUP.md`). Only for a custom domain, set the `ALLOWED_ORIGINS` Edge Function secret
+   to that domain plus the defaults.
 
 ## 5. Deploying the price function from the new repository
 
 1. Create a Supabase access token while signed in as StoicBytes (Account → Access Tokens).
-2. In `stoicbytes-studio/ledgerly` → Settings → Secrets and variables → Actions, add
+2. In `Stoicbytes/ledgerly` → Settings → Secrets and variables → Actions, add
    `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` (the project reference from its URL).
 3. Actions → "Deploy Edge Functions" → Run workflow. Check: in the app, Funds → Update prices works.
 

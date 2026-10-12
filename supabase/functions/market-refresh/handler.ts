@@ -2,6 +2,7 @@
 import { strFromU8, unzipSync } from "npm:fflate@0.8.2";
 import {
   chunk,
+  DEFAULT_ORIGINS,
   indiaToday,
   minusDays,
   originAllowed,
@@ -18,11 +19,9 @@ function settings() {
     url: Deno.env.get("SUPABASE_URL") ?? "",
     key: serviceKey(),
     secret: Deno.env.get("MARKET_REFRESH_SECRET") ?? "",
-    // Add Vercel preview deployments through the secret, e.g.
-    // "https://ledgerly-*-<team>.vercel.app" ("*" matches one label).
-    origins: (
-      Deno.env.get("ALLOWED_ORIGINS") ?? "https://ledgerly.vercel.app,http://localhost:8081"
-    ).split(",").map((origin) => origin.trim()).filter(Boolean),
+    // The ALLOWED_ORIGINS secret (comma-separated) replaces the defaults, e.g. for a custom domain.
+    origins: (Deno.env.get("ALLOWED_ORIGINS") ?? DEFAULT_ORIGINS.join(","))
+      .split(",").map((origin) => origin.trim()).filter(Boolean),
   };
 }
 
