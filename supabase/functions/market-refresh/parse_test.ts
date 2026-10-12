@@ -1,6 +1,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import {
   chunk,
+  DEFAULT_ORIGINS,
   indiaToday,
   minusDays,
   originAllowed,
@@ -174,4 +175,23 @@ Deno.test("allows listed origins and the project's preview deployments only", ()
     false,
   );
   strictEqual(originAllowed("https://app.example.evil", list), false);
+});
+
+Deno.test("the default origins admit the project's deployments only", () => {
+  for (
+    const origin of [
+      "https://ledgerly.vercel.app",
+      "https://ledgerly-stoicbytes-developers-team.vercel.app",
+      "https://ledgerly-cr37bj64v-stoicbytes-developers-team.vercel.app",
+      "http://localhost:8081",
+    ]
+  ) strictEqual(originAllowed(origin, DEFAULT_ORIGINS), true, origin);
+  for (
+    const origin of [
+      "https://evil-stoicbytes-developers-team.vercel.app",
+      "https://ledgerly-x.evil-stoicbytes-developers-team.vercel.app",
+      "https://other-cr37bj64v-stoicbytes-developers-team.vercel.app",
+      "https://ledgerly.vercel.app.evil",
+    ]
+  ) strictEqual(originAllowed(origin, DEFAULT_ORIGINS), false, origin);
 });

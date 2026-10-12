@@ -307,9 +307,11 @@ the app. To stop: `select cron.unschedule('market-refresh-evening');` (and `-mor
 
 - `ALLOWED_ORIGINS` (function secret, optional): the web addresses allowed to call the function,
   comma-separated. An entry may hold one `*` for one part of a host name (letters, digits,
-  hyphens). Default: `https://ledgerly.vercel.app` and `http://localhost:8081`. Add your own
-  domain here if the app runs on one, and Vercel previews as
-  `https://ledgerly-*-<team>.vercel.app` (the team's address part from a preview URL).
+  hyphens). Setting it replaces the defaults (`DEFAULT_ORIGINS` in
+  `supabase/functions/market-refresh/parse.ts`): `https://ledgerly.vercel.app`,
+  `https://ledgerly-stoicbytes-developers-team.vercel.app`, every deployment of the Vercel project
+  (`https://ledgerly-*-stoicbytes-developers-team.vercel.app`) and `http://localhost:8081`. Set it
+  only for an address outside these, such as a custom domain, and list the defaults too.
 - "Automatic prices are not set up yet", or "The price function did not answer" while online:
   the function is not deployed (step 1), or the app's web address is not in `ALLOWED_ORIGINS`.
   "NAVs: not fetched yet" on the Funds page means no run has finished yet.
