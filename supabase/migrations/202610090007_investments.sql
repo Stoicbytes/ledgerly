@@ -1,4 +1,4 @@
--- Phase 6–7: mutual funds and stocks on real data. Apply after 202610080006_ledger_sync.sql.
+-- Mutual funds and stocks on real data. Apply after 202610080006_ledger_sync.sql.
 --
 -- Two kinds of tables:
 --   * MARKET DATA (mf_schemes, mf_nav_history, securities, security_prices,

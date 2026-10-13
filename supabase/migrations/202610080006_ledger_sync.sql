@@ -1,6 +1,5 @@
--- Phase 3.2: two RPCs the Command Center uses to load and save the ledger and notes.
--- Apply after 202610080005_core_finance.sql. Rollback:
--- supabase/rollbacks/202610080006_ledger_sync_down.sql.
+-- Two RPCs the app uses to load and save the ledger and notes.
+-- Apply after 202610080005_core_finance.sql.
 --
 -- Both are SECURITY INVOKER: they run as the signed-in user, so every row still goes
 -- through RLS (own rows only, aal2 once two-step sign-in is on) and every CHECK and

@@ -37,7 +37,7 @@ product definition is in [`docs/PRODUCT.md`](docs/PRODUCT.md).
 apps/command-center/   The app (Expo Router, React Native Web) and the Vercel project that
                        serves both sites
 apps/portfolio/        The public portfolio (Vite + React, server-rendered)
-supabase/migrations/   Database schema, rules and functions, applied in order (0005–0015)
+supabase/migrations/   Database schema, rules and functions, applied in order (0004–0015)
 supabase/functions/    market-refresh: AMFI NAVs and exchange closing prices, fetched server-side
 docs/                  Product definition, architecture, decisions and feature guides
 SUPABASE_SETUP.md      Setting up and verifying the Supabase project

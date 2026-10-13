@@ -1,10 +1,7 @@
 # Ledgerly roadmap (October 2026)
 
-What is done, what comes next and why, and the longer plan for turning the app into an
-everyday personal command center. The architecture behind it is in
-[`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](decisions/README.md). The
-original migration plan from the Vite app was completed and removed (in git history up to
-`cadcab9`).
+What is done, what comes next and why, and the longer plan for the app. The architecture behind
+it is in [`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](decisions/README.md).
 
 ## Where we are
 
@@ -19,16 +16,16 @@ original migration plan from the Vite app was completed and removed (in git hist
 | Tradebook import            | **Done**        | Zerodha tradebooks (.xlsx/.csv) read on the device; you review each trade and approve before anything is saved                               |
 | Overview                    | Done            | Net worth includes funds and stocks                                                                                                          |
 | Public portfolio            | **Built**       | The site's home page, edited in Dashboard → Portfolio and published as a snapshot; Dashboard button opens the app; needs migration 0010      |
-| Old app's data              | Retired         | Not imported (your decision); migration 0008 deletes it. The ledger starts from scratch                                                      |
+| Old app's data              | Retired         | Not imported (your decision) and deleted from the database. The ledger starts from scratch                                                   |
 | App-wide Reports, Insights  | Not built       | Hidden from the app until they work; fund insights are under Mutual funds                                                                    |
 | Receipt photos              | **Done, saved** | Private Storage bucket, one-minute links; needs migration 0011                                                                               |
 | Expense extras              | **Done**        | Recurring entries (migration 0012), search with totals, CSV export, calculator in the amount; the calendar is the default view               |
 | Fund extras                 | **Done**        | Capital gains by financial year, goals, expense ratio and yearly cost, similar-fund hint, SIP step-up (migration 0013)                       |
 | Shares vs index             | **Done**        | Your shares against an index fund you choose (Nifty 50 to begin with), same money on the same dates (migration 0014)                         |
 
-> **October 2026:** the old Vite app was removed from the repository (the last commit that has it
-> is `efc04a9`); its saved data is not imported and migration 0008 deletes it. Migrations 0001–0004, their rollbacks and SQL tests were removed after being applied (in
-> history at `224176d`); 0005–0015 are in `supabase/migrations`.
+> **October 2026:** the old Vite app and its data were retired. `supabase/migrations` holds
+> everything a new project needs (0004 foundation, then 0005–0015), and CI installs it on an
+> empty database on every change.
 
 ## The plan in one picture
 
@@ -67,7 +64,7 @@ flowchart LR
 
 You chose not to bring the old app's data over. Instead:
 
-- **Migration 0008** permanently deletes the old app's tables (`user_workspaces`,
+- **The old app's tables were permanently deleted** (`user_workspaces`,
   `public_portfolios`) and the functions that wrote them. The planned import (a check report,
   then import) was built and then withdrawn before it was ever run
   ([ADR 0008](decisions/0008-start-from-scratch.md)).
@@ -105,13 +102,12 @@ You will share an export from the app you use today; the importer is built aroun
 upload, match its columns, a preview with duplicates flagged, then import. It runs on the server
 and the file is not kept. Export from Ledgerly comes with it, in the same shape.
 
-### Price updates live
+### Price updates live (done)
 
-- Deploy `market-refresh` and add the daily schedule (steps in
-  [`SUPABASE_SETUP.md`](../../SUPABASE_SETUP.md#prices-the-market-refresh-function)).
-- First run from the app (**Update prices**), then check `market_refresh_runs`. If the NSE
-  download is blocked from Supabase's servers, the BSE fallback or manual prices keep values
-  current; a paid provider is the long-term option (decision below).
+`market-refresh` is deployed from GitHub Actions and runs every weekday at 23:45 and 07:00 IST
+(fund NAVs from AMFI and exchange closing prices at the same time), and on **Update prices**.
+Each run is logged in `market_refresh_runs`. AMFI's current eight-column file is read, and the
+function answers only the project's own web addresses.
 
 ## Next
 
@@ -156,8 +152,8 @@ are never read or stored.
 
 ### Everyday power features
 
-- Recurring entries (rent, salary, subscriptions) with "record now" reminders.
-- Search across entries and notes; saved filters.
+- ~~Recurring entries~~ and ~~search with totals~~ (done). Next: saved filters, and search across
+  notes and entries together.
 - Offline add queue on phones (entries made without a connection are sent later).
 
 ### Investments v2
@@ -166,10 +162,10 @@ are never read or stored.
   transaction in one go. Parsed on the server; the PDF password is used once and never stored.
 - **Other brokers' tradebooks** (Groww, Upstox and others), with the same review and approve
   step as the Zerodha import.
-- **Capital gains by financial year**: FIFO lots, short/long term by holding period, grandfathered
+- ~~**Capital gains by financial year**~~ (done for funds). Still to come for shares: FIFO lots, short/long term by holding period, grandfathered
   cost for older equity; tax estimates only with rates that name their source and year.
 - **Dividends and corporate actions** calendar; prompts when a held share has a bonus or split.
-- **Benchmark comparison**: your XIRR against an index fund or index over the same cash flows.
+- ~~**Benchmark comparison**~~ (done: Stocks → vs Index).
 - **Portfolio health**: overlap between funds, expense ratio drag (direct vs regular), category
   concentration, top holdings across funds (from AMFI/AMC portfolio disclosures).
 - **SIP autopilot** (opt-in): records each instalment at the published NAV after the allotment
@@ -202,7 +198,7 @@ are never read or stored.
   performance; exportable CSV and PDF.
 - Rule-based insights first: unusual spending, budget pace, idle cash, SIPs missed, FD maturing,
   card due, insurance renewal.
-- Optional AI summaries, **off by default**: only with explicit opt-in (`user_preferences`), only
+- Optional AI summaries, **off by default**: only with an explicit opt-in setting, only
   aggregates (never raw notes or account numbers), and never required for any feature.
 
 ### Personal trackers (beyond money)
@@ -235,11 +231,10 @@ quick add for anything.
 
 ### Hardening and performance
 
-- Threat-model review with tests for each control; SQL tests for every migration run before it
-  ships (and back in CI if the owner wants them in the repository).
+- Threat-model review with tests for each control. CI already installs every migration on an
+  empty database; the behaviour tests for each migration (run locally before it ships) can join it.
 - Route-level code splitting (web bundle to ≤ 350 KiB); performance budgets per screen.
 - Error reporting with a scrubber that never sends amounts, notes or tokens (optional Sentry).
-- Delete the old Vercel project.
 
 ## What premium apps do, and how we do it
 

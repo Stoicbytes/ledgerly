@@ -26,7 +26,7 @@ in [`ROADMAP.md`](../../docs/architecture/ROADMAP.md).
   served as this site's home page by `api/site.mjs` (built by `npm run build:site`); how it
   works: [`docs/features/PORTFOLIO.md`](../../docs/features/PORTFOLIO.md).
 
-**Signed in** (migrations 0005–0015 applied), every page loads and saves **your own** data, and
+**Signed in** (all migrations applied), every page loads and saves **your own** data, and
 the badge by the page title reads Saved / Saving… / Offline · will retry. Prices come from the
 `market-refresh` Edge Function (see [`SUPABASE_SETUP.md`](../../SUPABASE_SETUP.md#prices-the-market-refresh-function)).
 **Without the Supabase settings** the app runs as a labelled preview on sample data, and a

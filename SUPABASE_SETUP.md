@@ -5,46 +5,38 @@ This page lists what is set up on the Supabase side and how to manage it. Connec
 (the two `EXPO_PUBLIC_` variables on Vercel) is in
 [`apps/command-center/README.md` → Sign-in](apps/command-center/README.md#sign-in).
 
-> **History.** Migrations 0001–0004 (the old app's workspace, conflict-safe saves, mutual funds,
-> and auth hardening) have been applied and were removed from the repository with their rollback
-> scripts and SQL tests; they are in Git history at commit `224176d`. The old Vite app itself was
-> removed in October 2026. Migrations 0005–0010, which Ledgerly depends on, are in
-> `supabase/migrations/`. New database changes add new numbered files there.
+> **Migrations.** `supabase/migrations/` holds everything a new project needs, in order, starting
+> with `202610080004_foundation.sql`. CI applies all of them twice to an empty database
+> (`supabase/tests/fresh_install.sh`). New database changes add new numbered files there.
 
 ## What is in the database
 
-| Part                                                | From                | Used by                                                                     |
-| --------------------------------------------------- | ------------------- | --------------------------------------------------------------------------- |
-| Sign-up allowlist and its Before User Created hook  | 0004                | Every new account (only allowlisted emails can sign up)                     |
-| `profiles`, `user_preferences`, `audit_logs`        | 0004                | Created per account; `audit_logs` records changes by column name, no values |
-| Finance and notes tables                            | 0005                | The Ledgerly                                                                |
-| `load_ledger()` and `sync_ledger(jsonb)`            | 0006, replaced 0007 | The Ledgerly, to load and save (now including investments)                  |
-| Mutual fund and stock tables                        | 0007                | Mutual funds and Stocks pages                                               |
-| `mf_funds.isin`, `sync_ledger` saving it            | 0009                | Matching tradebook imports to your funds                                    |
-| Market data tables and their functions              | 0007                | Prices, written only by the `market-refresh` Edge Function                  |
-| Portfolio tables, functions and `portfolio-media`   | 0010                | Dashboard → Portfolio, and the public portfolio site                        |
-| `transactions.receipt`, private `receipts` bucket   | 0011                | Receipt photos on entries (only you can see them)                           |
-| `recurring_entries`, `load_ledger`/`sync_ledger`    | 0012                | Recurring entries (rent, subscriptions, EMIs)                               |
-| `investment_goals`, fund expense ratio, SIP step-up | 0013                | Mutual funds → Insights (goals, costs) and SIP step-up                      |
-| `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                                           |
-| `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                                      |
-| `user_workspaces`, `public_portfolios`              | 0001–0003 (old app) | Nothing. Deleted by 0008 (the app starts from scratch)                      |
+| Part                                                | From                | Used by                                                    |
+| --------------------------------------------------- | ------------------- | ---------------------------------------------------------- |
+| Sign-up allowlist and its Before User Created hook  | 0004                | Every new account (only allowlisted emails can sign up)    |
+| `audit_logs`, `internal.log_audit`                  | 0004                | Every change, recorded by column name, never the values    |
+| Finance and notes tables                            | 0005                | The Ledgerly                                               |
+| `load_ledger()` and `sync_ledger(jsonb)`            | 0006, replaced 0007 | The Ledgerly, to load and save (now including investments) |
+| Mutual fund and stock tables                        | 0007                | Mutual funds and Stocks pages                              |
+| `mf_funds.isin`, `sync_ledger` saving it            | 0009                | Matching tradebook imports to your funds                   |
+| Market data tables and their functions              | 0007                | Prices, written only by the `market-refresh` Edge Function |
+| Portfolio tables, functions and `portfolio-media`   | 0010                | Dashboard → Portfolio, and the public portfolio site       |
+| `transactions.receipt`, private `receipts` bucket   | 0011                | Receipt photos on entries (only you can see them)          |
+| `recurring_entries`, `load_ledger`/`sync_ledger`    | 0012                | Recurring entries (rent, subscriptions, EMIs)              |
+| `investment_goals`, fund expense ratio, SIP step-up | 0013                | Mutual funds → Insights (goals, costs) and SIP step-up     |
+| `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                          |
+| `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                     |
 
 `internal` (allowlist, hook, helpers) is not exposed through the Data API, so none of it is
 reachable from the browser.
 
 ## One-time setup checklist
 
-1. **Migrations applied, in order:** 0001–0004 (done earlier), then
-   `202610080005_core_finance.sql`, `202610080006_ledger_sync.sql`,
-   `202610090007_investments.sql`, `202610100008_retire_old_app.sql`,
-   `202610110009_fund_isin.sql`, `202610120010_portfolio.sql`, `202610120011_receipts.sql`
-   `202610130012_recurring.sql`, `202610140013_fund_goals.sql`,
-   `202610150014_stock_benchmark.sql` and `202610160015_note_reminders.sql` from
-   `supabase/migrations/`
-   (SQL Editor → paste → Run).
+1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
+   `202610080004_foundation.sql` to `202610160015_note_reminders.sql` (SQL Editor → paste →
+   Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
-   function `before_user_created`. The **Allow new users to sign up** switch can stay off as a
+   function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
    second layer.
 3. **Two-step sign-in available:** Authentication → Multi-Factor → TOTP enabled (on by default).
 4. **Redirect URLs:** Authentication → URL Configuration → add
@@ -107,18 +99,9 @@ Run `202610090007_investments.sql` after 0006. It adds:
 
 The file ends with a commented rollback.
 
-## Retiring the old app's data (migration 0008)
-
-The Ledgerly starts from scratch: the old app's data is not imported (owner's decision,
-October 2026). `202610100008_retire_old_app.sql` **permanently deletes** `user_workspaces` and
-`public_portfolios` with the functions that wrote them. Nothing in Ledgerly reads them.
-Take a backup first (Database → Backups) if you might want them again; there is no rollback.
-
-Your own data in Ledgerly (entries, notes, funds, stocks) is not touched by it.
-
 ## Fund ISINs for imports (migration 0009)
 
-Run `202610110009_fund_isin.sql` after 0008 (or after the one-file update below). It gives each
+Run `202610110009_fund_isin.sql` after 0007. It gives each
 fund an `isin` column, which **Import** uses to match tradebook rows to the right fund, and fills it
 in for the funds you have: from the fund's AMFI scheme, or from the "ISIN …" note the Zerodha load
 left (that note is then cleared). `sync_ledger` is replaced to save the new column (nothing else in

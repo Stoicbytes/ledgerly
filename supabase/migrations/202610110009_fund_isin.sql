@@ -1,6 +1,6 @@
 -- Funds get an ISIN (the identifier every tradebook, statement and the AMFI list uses), so a
 -- broker tradebook import can match its rows to the right fund. Apply after
--- 202610100008_retire_old_app.sql.
+-- 202610090007_investments.sql.
 --
 --   * mf_funds.isin (optional, validated), filled in for existing funds from their AMFI scheme or
 --     from an "ISIN ..." note left by the one-time Zerodha load (that note is then cleared).

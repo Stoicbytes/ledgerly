@@ -8,8 +8,7 @@ type UiState = {
 };
 
 /**
- * Small, non-persisted UI state. Persistence moves to `user_preferences`
- * (Supabase) in Phase 3; nothing financial ever lives here.
+ * Small, non-persisted UI state; nothing financial ever lives here.
  */
 export const useUiStore = create<UiState>((set) => ({
   themePreference: 'system',

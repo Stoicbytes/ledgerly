@@ -1,7 +1,7 @@
 # Expense Manager: Logical Flow and Screen Plan
 
 > Scope: the Expenses module of `apps/command-center`.
-> References: the owner's current Vite expense tracker (calendar view) and the Money Manager app by Realbyte Inc. (transaction entry, category grid with subcategories, stats pie, category management).
+> References: the earlier expense tracker (calendar view) and the Money Manager app by Realbyte Inc. (transaction entry, category grid with subcategories, stats pie, category management).
 > Status (Oct 2026): **implemented** in `apps/command-center` and saved to Supabase when signed in (a labelled sample-data preview otherwise). Later additions (recurring entries, search and CSV export, receipts, the calculator) are described in [`../features/README.md`](../features/README.md).
 
 ---
@@ -56,7 +56,7 @@ Shared state across Expenses pages:
    - An income adds to its account; an expense subtracts from its account.
    - A transfer subtracts **amount + fee** from the source and adds **amount** to the destination.
    - Cards hold a negative balance (money owed), so a card purchase makes it more negative and a card bill payment (a transfer bank → card) brings it back towards zero.
-   - This fixes defect F1 from the plan, where the old app never reduced the bank balance when a card bill was paid.
+   - A card bill payment therefore reduces the bank balance as well as the card debt.
 2. **Income / Expense totals** count income and expense transactions. They **exclude transfers**: moving money between your own accounts is neither earning nor spending. A transfer **fee** is a real cost, so it counts as an expense and shows in Stats as "Transfer fees".
 3. **"Savings" and "Credit card bill" are transfers, not expense categories.** Treating them as expenses double-counts spending: the card purchases are already expenses, and money moved into investments is not spent. Seed data models a SIP as bank → Investments and a bill as bank → card. The future CSV importer maps these old categories to transfers (plan §21).
 4. **Assets / Liabilities / Total:** Assets are the sum of positive account balances, liabilities the sum of negative ones, and Total = assets + liabilities.

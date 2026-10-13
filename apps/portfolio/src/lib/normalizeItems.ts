@@ -14,7 +14,7 @@ import type {
 } from './types';
 
 /** Readers for each kind of item in the published document (see normalize.ts). */
-export const id = (v: unknown, index: number) => str(v, 64) || `item-${index}`;
+const id = (v: unknown, index: number) => str(v, 64) || `item-${index}`;
 
 export function link(v: unknown, i: number): SocialLink | null {
   const l = obj(v);
@@ -42,7 +42,7 @@ export function fact(v: unknown, i: number): Fact | null {
   };
 }
 
-export function skill(v: unknown, i: number): Skill | null {
+function skill(v: unknown, i: number): Skill | null {
   const s = obj(v);
   const name = str(s.name, 60);
   const level = num(s.level);
