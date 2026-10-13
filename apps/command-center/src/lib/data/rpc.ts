@@ -19,7 +19,8 @@ export type RpcName =
   | 'portfolio_media_paths'
   | 'portfolio_publish'
   | 'portfolio_unpublish'
-  | 'portfolio_preview_token';
+  | 'portfolio_preview_token'
+  | 'reset_data';
 
 /** The Edge Functions the app may call. */
 export type FunctionName = 'market-refresh';

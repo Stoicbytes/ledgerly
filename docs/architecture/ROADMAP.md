@@ -26,7 +26,7 @@ it is in [`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](d
 | Shares vs index             | **Done**        | Your shares against an index fund you choose (Nifty 50 to begin with), same money on the same dates (migration 0014)                         |
 
 > **October 2026:** the old Vite app and its data were retired. `supabase/migrations` holds
-> everything a new project needs (0004 foundation, then 0005–0017), and CI installs it on an
+> everything a new project needs (0004 foundation, then 0005–0018), and CI installs it on an
 > empty database on every change.
 
 ## The plan in one picture
