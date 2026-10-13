@@ -5,6 +5,7 @@ import { useDisplayName } from '@/features/auth/useDisplayName';
 import { greeting } from '@/lib/formatting/greeting';
 import { useTheme } from '@/theme';
 import { BrandMark } from './BrandMark';
+import { SearchButton } from './SearchButton';
 import { ThemeToggle } from './ThemeToggle';
 
 export function MobileHeader() {
@@ -32,6 +33,7 @@ export function MobileHeader() {
           {name}
         </Text>
       </View>
+      <SearchButton />
       <ThemeToggle />
     </View>
   );

@@ -35,6 +35,11 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   `repayment_settles` through `load_ledger` / `sync_ledger`.
 - **State:** `useExpenseStore` holds the ledger; screens compute balances, totals and budgets
   from it (pure functions, tested).
+- **Budget alerts:** a category with a monthly budget is flagged when it is over, when 80% or
+  more is used, or (from the 7th) when this month's daily rate would pass it by month-end;
+  subcategories count toward their parent. They show on Expenses → Budget (current month) and
+  as one Overview insight. Code: `budgetAlerts` in `lib/domain/expenses/budgets.ts`,
+  `budget/BudgetAlertsCard.tsx`, `features/overview/budgetInsight.ts`.
 - **Receipt photos** (`photos/`): signed in, a photo is uploaded to the private `receipts`
   bucket as soon as it is picked (re-encoded in the browser first, which drops location data),
   and Save waits for it; it is shown through links that expire after a minute; unused files are
@@ -46,6 +51,10 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   by words, an amount, type, period, category and account, with totals; **Export** saves the
   results (or everything) as CSV for Excel. Cells that would run as formulas are neutralised
   (`lib/domain/expenses/csv.ts`). Web: a file download; phones: the share sheet.
+- **Search everything:** typed words also find notes and checklists (not deleted ones), funds,
+  goals, shares, employers and payslips (by employer, month or pay line), up to five of each,
+  above the entries; a tap opens that screen. Folio and member numbers are never searched.
+  Code: `lib/domain/search/everything.ts` (tested), `search/EverythingResults.tsx`.
 - **Recurring entries** (`recurring/`, `state/recurring*.ts`): **Repeat** on a new entry (daily,
   weekly, monthly, yearly; monthly keeps the day, using the month's last day when shorter). Due
   dates appear on Transactions: **Add** opens the sheet with the amount ready to change, **Skip**
@@ -103,6 +112,21 @@ funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfol
 Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
 `features/settings/exportAll.ts`, `ExportCard.tsx`.
 
+## Reset data
+
+Settings → **Reset data** clears one part of Ledgerly so it can start again: **expense entries**
+(entries and recurring entries; accounts, categories, budgets and people stay), **everything in
+Expenses** (also accounts, categories and people; the starter set can be added again), **mutual
+funds** (funds with their transactions and SIPs, and goals) or **stocks** (shares and their
+trades; the benchmark stays). Salary, PF, notes and the portfolio site are never touched.
+
+- **Safety:** the sheet says what will be deleted (with counts) and stays locked until RESET is
+  typed. Signed in, unsaved edits are sent first; if they cannot be (offline), nothing happens.
+- **How:** the database deletes the rows in one transaction (`reset_data`, migration 0018, so
+  large ledgers are cleared at once), then the app loads everything again. Preview mode clears
+  the sample data in memory. Not reversible: download **Export everything** first.
+- **Code:** `features/settings/reset/`, `lib/data/resetRepository.ts`.
+
 ## Import from another app
 
 Settings → **Import from another app** reads an .xlsx or .csv export from another expense app
@@ -122,9 +146,16 @@ added before anything is saved:
 - **Accounts and categories:** matched to yours by name (ignoring case, spaces and emoji); missing ones
   are created, with names cut to the database's limits (accounts 60 characters, categories 40).
   New accounts start at a ₹0 opening balance: set it in Accounts so balances match.
-- **Left out, with the reason:** balance corrections, transfers, unreadable dates or amounts.
-- **Already there:** entries with the same day, type, amount, account and note are skipped, so
-  importing the same file twice adds nothing.
+- **Transfers:** Transfer-Out moves money from Accounts to the account named in Category;
+  Transfer-In is the same transfer from the receiving side, so a matching pair imports once.
+  Transfers are not counted as spending or income.
+- **Balance corrections** ("Modified Bal."): added to the opening balance of an account the
+  import creates (Income Balance raises it, Expense Balance lowers it), so totals stay clean.
+  For an account you already had they are left out: set its balance in Accounts.
+- **Left out, with the reason:** unknown types, transfers without two accounts, corrections for
+  existing accounts, unreadable dates or amounts.
+- **Already there:** entries with the same day, type, amount, account(s) and note are skipped,
+  so importing the same file twice adds nothing.
 - **Large files:** at most 4,000 entries per import (one save takes up to 5,000 rows); the
   oldest go first and importing the same file again adds the rest. Files over 5 MB, and old
   .xls files, are refused with what to do instead.
@@ -150,7 +181,7 @@ since uses them. Web only for now (phones need a file picker). Code:
   cash flow, budget use, recent activity.
 - **Net worth:** credit card accounts are left out; what is owed on them shows as an insight.
 - **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
-  card dues, savings rate, spending pace against the same days last month, the month-end
+  card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
   course, the category that rose most, how many months your cash covers, recurring entries due
   this week, the last salary and TDS this financial year, the largest expense. Nothing leaves
   the device for this. Code: `features/overview/insights.ts` (tested), `InsightsCard.tsx`.

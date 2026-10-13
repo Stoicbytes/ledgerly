@@ -14,4 +14,6 @@ export * from './photos';
 export * from './recurring';
 export * from './search';
 export * from './sheetImport';
+export * from './sheetImportGuess';
 export * from './sheetImportPlan';
+export * from './sheetImportUndo';

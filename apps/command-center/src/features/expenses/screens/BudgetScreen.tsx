@@ -1,6 +1,8 @@
 import { BentoCell, BentoRow } from '@/components/layout/Bento';
 import { Screen, useFitMode } from '@/components/layout/Screen';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
+import { todayIso } from '@/lib/domain/expenses';
+import { BudgetAlertsCard } from '../budget/BudgetAlertsCard';
 import { BudgetHero } from '../budget/BudgetHero';
 import { BudgetsCard } from '../budget/BudgetsCard';
 import { UnbudgetedCard } from '../budget/UnbudgetedCard';
@@ -21,6 +23,7 @@ export function BudgetScreen() {
       <Screen>
         <ExpensesHeader />
         <BudgetHero view={view} />
+        <BudgetAlertsCard view={view} today={todayIso()} />
         <BudgetsCard view={view} editing={editing} />
         <UnbudgetedCard view={view} editing={editing} />
       </Screen>
@@ -32,6 +35,7 @@ export function BudgetScreen() {
       <BentoRow stackBelow="desktop" fill={1}>
         <BentoCell flex={4}>
           <BudgetHero view={view} />
+          <BudgetAlertsCard view={view} today={todayIso()} />
           <UnbudgetedCard view={view} editing={editing} style={grow} />
         </BentoCell>
         <BentoCell flex={7}>
