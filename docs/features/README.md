@@ -161,7 +161,8 @@ since uses them. Web only for now (phones need a file picker). Code:
 ## Portfolio (public site and editor)
 
 - **Purpose:** the owner's public developer portfolio, the site's home page, edited in the
-  dashboard and published without a redeploy.
+  dashboard and published without a redeploy; the CV tab downloads an ATS-friendly CV (PDF or
+  Word) built from it, with a readiness score.
 - **Access:** `/` (public); Dashboard → Portfolio (editor).
 - **Code:** `apps/portfolio/` (site), `features/portfolio-site/` and `lib/domain/site/` (editor),
   `apps/command-center/api/site.mjs` (serves the site at `/`).

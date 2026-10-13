@@ -51,6 +51,33 @@ flowchart LR
   again and refuses anything else (unknown columns, http links, a slug used twice, an end date
   before the start).
 
+## CV download (Portfolio → CV)
+
+The **CV** tab builds a CV from the portfolio's visible items (unpublished edits included) and
+downloads it as **PDF** or **Word** (`Firstname-Lastname-CV.pdf` / `.docx`), made on the device.
+
+- **Layout for ATS:** one column, standard headings (Professional Summary, Skills, Work
+  Experience, Projects, Education, Certifications), real text in reading order, dates beside
+  each title (right-aligned dates are read out of order by PDF parsers), no tables, images,
+  icons, headers or footers. The PDF uses the standard Helvetica fonts; the Word file uses
+  Calibri and a real heading style.
+- **Content:** name, title, contact line (public email or Email link, the phone typed on the
+  tab, location, LinkedIn/GitHub/website links, the site's address), summary from
+  Introduction (up to 80 words), skills by area, roles newest first (key contributions,
+  achievements, then responsibilities; up to 8 for the latest role, 6 for others; technologies
+  line), up to 4 projects (featured first), degrees, then certifications, courses and awards.
+- **Phone:** typed on the tab for the download only; never saved, so it never reaches the
+  public site.
+- **ATS readiness:** Ledgerly's own score out of 100 from common guidance: parsable layout,
+  email, phone, title, a 25–100 word summary, 8+ skills, dated roles with bullets, 3+ bullets
+  per role, numbers in 30% of role bullets, action-led bullets, bullets under 35 words, 300–1,100
+  words, education or certifications. Paste a job description to see which of its keywords
+  the CV has (then 60% checklist, 40% keyword match). Checked on the device; real ATS scores
+  differ by employer.
+- **Code:** `lib/domain/cv/` (build, layout, ATS check, keywords, PDF and Word writers;
+  tested, including a read-back of the text order), `features/portfolio-site/cv/`. Web only for
+  now (phones need a file module).
+
 ## Preview and publish
 
 - The bar at the top shows **Changes not published** or **Up to date**, and the live version.
@@ -124,4 +151,4 @@ These limits make abuse slow and bounded, not impossible. Messages are visible o
 
 - Email or push notification of new messages (needs an Edge Function and a mail provider).
 - Analytics, a blog, several languages, custom themes per section.
-- Choosing PDFs in the phone apps.
+- Choosing PDFs in the phone apps, and downloading the CV there.
