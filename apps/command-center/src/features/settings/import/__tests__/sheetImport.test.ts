@@ -24,8 +24,8 @@ describe('importing from another app', () => {
     expect(lines[0]).toMatch(
       /^2 entries from 14 Aug 2026 to 15 Aug 2026: ₹15 spent, ₹2,000 income\.$/,
     );
-    expect(lines).toContain('New accounts, starting at ₹0: Old bank (Bank account).');
-    expect(lines.some((line) => /^1 row left out\. Balance corrections/.test(line))).toBe(true);
+    expect(lines).toContain('New accounts: Old bank (Bank account).');
+    expect(lines).toContain('Opening balances from balance corrections: Old bank ₹900.');
     expect(useExpenseStore.getState().transactions).toHaveLength(before);
   });
 

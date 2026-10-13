@@ -142,9 +142,16 @@ added before anything is saved:
 - **Accounts and categories:** matched to yours by name (ignoring case, spaces and emoji); missing ones
   are created, with names cut to the database's limits (accounts 60 characters, categories 40).
   New accounts start at a ₹0 opening balance: set it in Accounts so balances match.
-- **Left out, with the reason:** balance corrections, transfers, unreadable dates or amounts.
-- **Already there:** entries with the same day, type, amount, account and note are skipped, so
-  importing the same file twice adds nothing.
+- **Transfers:** Transfer-Out moves money from Accounts to the account named in Category;
+  Transfer-In is the same transfer from the receiving side, so a matching pair imports once.
+  Transfers are not counted as spending or income.
+- **Balance corrections** ("Modified Bal."): added to the opening balance of an account the
+  import creates (Income Balance raises it, Expense Balance lowers it), so totals stay clean.
+  For an account you already had they are left out: set its balance in Accounts.
+- **Left out, with the reason:** unknown types, transfers without two accounts, corrections for
+  existing accounts, unreadable dates or amounts.
+- **Already there:** entries with the same day, type, amount, account(s) and note are skipped,
+  so importing the same file twice adds nothing.
 - **Large files:** at most 4,000 entries per import (one save takes up to 5,000 rows); the
   oldest go first and importing the same file again adds the rest. Files over 5 MB, and old
   .xls files, are refused with what to do instead.

@@ -46,8 +46,8 @@ const sheet = [
   row({}),
   row({ 0: 46248.83, 3: 'Lunch', 4: 'Meals', 7: 'Meals with team', 8: 120.5 }),
   row({ 2: 'Salary', 3: null, 4: '', 6: 'Income', 7: '', 8: 50000 }),
-  row({ 1: 'Wallet', 2: 'Modified Bal.', 6: 'Income Balance', 8: 52498 }),
-  row({ 6: 'Transfer-Out' }),
+  row({ 1: 'Wallet', 2: 'Loan', 6: 'Debt' }),
+  row({ 2: '', 6: 'Transfer-Out' }),
   row({ 8: 0 }),
   row({ 0: 'not a date' }),
   [null, null, ''],
@@ -78,7 +78,7 @@ describe('reading an expense export', () => {
 
   it('says why rows are left out', () => {
     expect(read.skipped.map((item) => item.reason)).toEqual([
-      SKIP_REASONS.balance,
+      SKIP_REASONS.type,
       SKIP_REASONS.transfer,
       SKIP_REASONS.amount,
       SKIP_REASONS.date,
