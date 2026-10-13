@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Inbox, RotateCcw } from '@/components/icons';
 import { Button, Card, CardHeader, CategoryIcon, Text } from '@/components/ui';
 import { canPickFiles } from '@/features/investments/import/pickFiles';
+import { isCloudActive, useSyncStatus } from '@/features/sync/syncStatus';
 import { ACCOUNT_TYPE_LABELS, parseIsoDate, type SheetImportPlan } from '@/lib/domain/expenses';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
@@ -32,12 +33,20 @@ export function reviewLines(plan: SheetImportPlan): string[] {
       `${count(top.length, 'new category', 'new categories')} and ${count(plan.categories.length - top.length, 'subcategory', 'subcategories')}; the rest match yours.`,
     );
   }
+  if (plan.remaining) {
+    lines.push(
+      `${count(plan.remaining, 'more entry', 'more entries')} after these: import the same file again once this import is saved.`,
+    );
+  }
   if (plan.duplicates) {
     lines.push(`${count(plan.duplicates, 'entry', 'entries')} already in Ledgerly, skipped.`);
   }
   const reasons = new Map<string, number>();
   for (const item of plan.skipped) reasons.set(item.reason, (reasons.get(item.reason) ?? 0) + 1);
   for (const [reason, n] of reasons) lines.push(`${count(n, 'row')} left out. ${reason}`);
+  if (!plan.transactions.length && !plan.duplicates) {
+    lines.unshift('Nothing to import: the file has no expense or income rows that can be added.');
+  }
   return lines;
 }
 
@@ -45,6 +54,7 @@ export function reviewLines(plan: SheetImportPlan): string[] {
 export function SheetImportCard({ index }: { index: number }) {
   const theme = useTheme();
   const { state, choose, approve, undo, reset } = useSheetImport();
+  const saved = isCloudActive(useSyncStatus((sync) => sync.status));
   return (
     <Card index={index} style={{ gap: theme.space[4] }}>
       <CardHeader
@@ -73,7 +83,7 @@ export function SheetImportCard({ index }: { index: number }) {
       ) : state.phase === 'done' ? (
         <View style={{ gap: theme.space[3] }}>
           <Text variant="caption" color="textSecondary">
-            {`Imported ${count(state.added, 'entry', 'entries')}. Set each new account's opening balance in Accounts so its balance matches your bank.`}
+            {`Imported ${count(state.imported.transactions.length, 'entry', 'entries')}. Set each new account's opening balance in Accounts so its balance matches your bank.${state.imported.remaining ? ' Import the same file again for the rest.' : ''}${saved ? '' : ' Preview: nothing is saved.'}`}
           </Text>
           <View style={{ flexDirection: 'row', gap: theme.space[3], flexWrap: 'wrap' }}>
             <Button label="Done" variant="secondary" onPress={reset} />

@@ -1,4 +1,4 @@
-import { tradeDate } from '../investments/tradebook';
+import { dayFirst, readWhen } from './sheetDates';
 import type { CategoryKind } from './types';
 import { MAX_NOTE_LENGTH } from './validation';
 
@@ -34,28 +34,23 @@ export type SheetRead = {
 };
 
 const REQUIRED = ['period', 'accounts', 'category', 'amount', 'income/expense'] as const;
-const DAY = 86_400_000;
-const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
 
 export const SKIP_REASONS = {
   balance: 'Balance corrections are left out: set the account balance in Accounts instead.',
   transfer: 'Transfers are left out: add them as transfers by hand.',
   type: 'The type is not income or expense.',
   date: 'The date could not be read.',
-  amount: 'The amount is zero or could not be read.',
+  amount: 'The amount is zero, negative or could not be read.',
 } as const;
 
 const text = (cell: Cell | undefined) =>
   cell === null || cell === undefined ? '' : String(cell).trim();
 
-/** A date cell: an Excel serial (the time of day kept) or text such as 2026-08-14 10:49. */
-function readWhen(cell: Cell | undefined): { date: string; at: number } | null {
-  if (typeof cell === 'number' && cell > 20000 && cell < 80000) {
-    const at = EXCEL_EPOCH + Math.round(cell * DAY);
-    return { date: new Date(Math.floor(at / DAY) * DAY).toISOString().slice(0, 10), at };
-  }
-  const date = tradeDate(cell);
-  return date ? { date, at: Date.parse(`${date}T00:00:00Z`) } : null;
+/** "₹1,234.50", "1,234.50 INR" or a number → paise; NaN when it is not an amount. */
+export function readAmount(cell: Cell | undefined): number {
+  if (typeof cell === 'number') return Math.round(cell * 100);
+  const value = text(cell).replace(/[^0-9.-]/g, '');
+  return /^-?\d*\.?\d+$/.test(value) ? Math.round(Number(value) * 100) : NaN;
 }
 
 function readKind(value: string): CategoryKind | keyof typeof SKIP_REASONS {
@@ -94,7 +89,9 @@ export function readExpenseSheet(rows: Cell[][]): SheetRead {
   const names = rows[headerAt].map((cell) => text(cell).toLowerCase());
   const col = (name: string) => names.indexOf(name);
   const read: SheetRead = { rows: [], skipped: [], problems: [] };
-  rows.slice(headerAt + 1).forEach((row, index) => {
+  const body = rows.slice(headerAt + 1);
+  const isDayFirst = dayFirst(body.map((row) => row[col('period')]));
+  body.forEach((row, index) => {
     const line = headerAt + index + 2;
     if (row.every((cell) => text(cell) === '')) return;
     const kind = readKind(text(row[col('income/expense')]));
@@ -102,11 +99,9 @@ export function readExpenseSheet(rows: Cell[][]): SheetRead {
       read.skipped.push({ line, reason: SKIP_REASONS[kind] });
       return;
     }
-    const when = readWhen(row[col('period')]);
+    const when = readWhen(row[col('period')], isDayFirst);
     if (!when) return void read.skipped.push({ line, reason: SKIP_REASONS.date });
-    const cell = row[col('amount')];
-    const value = typeof cell === 'number' ? cell : Number(text(cell).replace(/,/g, ''));
-    const amount = Math.round(value * 100);
+    const amount = readAmount(row[col('amount')]);
     if (!Number.isFinite(amount) || amount <= 0 || amount > 1e12) {
       read.skipped.push({ line, reason: SKIP_REASONS.amount });
       return;

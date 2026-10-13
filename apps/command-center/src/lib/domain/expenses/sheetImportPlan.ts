@@ -1,4 +1,5 @@
 import type { SheetRead } from './sheetImport';
+import type { RecurringEntry } from './recurring';
 import type { Account, AccountGroup, Category, CategoryKind, Transaction } from './types';
 
 /**
@@ -17,10 +18,24 @@ export type SheetImportPlan = {
   range: { start: string; end: string } | null;
   income: number;
   expense: number;
+  /** New entries beyond one import's limit: importing the same file again adds them. */
+  remaining: number;
 };
+
+/**
+ * One import stays well inside what a single save accepts (5,000 rows per list); the
+ * oldest entries go first and the rest follow when the same file is imported again.
+ */
+export const MAX_IMPORT_ENTRIES = 4000;
+/** The database's name limits (accounts 60 characters, categories 40). */
+const ACCOUNT_NAME = 60;
+const CATEGORY_NAME = 40;
 
 type Ledger = { accounts: Account[]; categories: Category[]; transactions: Transaction[] };
 
+/** Trimmed, single-spaced and cut to `max` characters (emoji count as one). */
+export const cleanName = (name: string, max: number) =>
+  Array.from(name.trim().replace(/\s+/g, ' ')).slice(0, max).join('').trim();
 const key = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
 const nextOrder = (items: { order: number }[]) =>
   items.reduce((max, item) => Math.max(max, item.order + 1), 0);
@@ -78,14 +93,16 @@ export function planSheetImport(
     range: null,
     income: 0,
     expense: 0,
+    remaining: 0,
   };
 
-  const accountFor = (name: string) => {
+  const accountFor = (raw: string) => {
+    const name = cleanName(raw, ACCOUNT_NAME);
     const found = accounts.find((item) => key(item.name) === key(name));
     if (found) return found.id;
     const account: Account = {
       id: newId(),
-      name: name.trim().replace(/\s+/g, ' '),
+      name,
       group: guessAccountGroup(name),
       openingBalance: 0,
       order: nextOrder(accounts),
@@ -95,7 +112,8 @@ export function planSheetImport(
     return account.id;
   };
 
-  const categoryFor = (kind: CategoryKind, name: string, parent: Category | null) => {
+  const categoryFor = (kind: CategoryKind, raw: string, parent: Category | null) => {
+    const name = cleanName(raw, CATEGORY_NAME);
     const found = categories.find(
       (item) =>
         item.kind === kind &&
@@ -111,7 +129,7 @@ export function planSheetImport(
       id: newId(),
       kind,
       parentId: parent?.id ?? null,
-      name: name.trim().replace(/\s+/g, ' '),
+      name,
       icon: parent?.icon ?? guessCategoryIcon(name),
       tint: parent?.tint ?? topLevel % TINTS,
       budget: null,
@@ -135,6 +153,10 @@ export function planSheetImport(
     if (left > 0) {
       existing.set(match, left - 1);
       plan.duplicates += 1;
+      continue;
+    }
+    if (plan.transactions.length >= MAX_IMPORT_ENTRIES) {
+      plan.remaining += 1;
       continue;
     }
     const parent = row.category ? categoryFor(row.kind, row.category, null) : null;
@@ -170,3 +192,45 @@ export const withImported = <T extends Ledger>(ledger: T, items: Ledger): T => (
   categories: [...ledger.categories, ...items.categories],
   transactions: [...ledger.transactions, ...items.transactions],
 });
+
+/**
+ * Takes an import back: its entries go, and the accounts and categories it created go
+ * too unless something added since still uses them. Repayments keep no link to removed
+ * entries.
+ */
+export function withoutImported<T extends Ledger>(
+  ledger: T,
+  imported: Ledger,
+  rules: readonly RecurringEntry[],
+): T {
+  const gone = new Set(imported.transactions.map((item) => item.id));
+  const transactions = ledger.transactions
+    .filter((item) => !gone.has(item.id))
+    .map((item) =>
+      item.settles?.some((id) => gone.has(id))
+        ? { ...item, settles: item.settles.filter((id) => !gone.has(id)) }
+        : item,
+    );
+  const usedCategories = new Set<string | null>([
+    ...transactions.map((item) => item.categoryId),
+    ...rules.map((rule) => rule.categoryId),
+  ]);
+  const usedAccounts = new Set<string | null>(
+    [...transactions, ...rules].flatMap((item) => [item.accountId, item.toAccountId]),
+  );
+  const newCategories = new Set(imported.categories.map((item) => item.id));
+  // A created category stays when it, or a subcategory under it that stays, is in use.
+  const keepCategory = (id: string): boolean =>
+    !newCategories.has(id) ||
+    usedCategories.has(id) ||
+    ledger.categories.some((item) => item.parentId === id && keepCategory(item.id));
+  const newAccounts = new Set(imported.accounts.map((item) => item.id));
+  return {
+    ...ledger,
+    transactions,
+    categories: ledger.categories.filter((item) => keepCategory(item.id)),
+    accounts: ledger.accounts.filter(
+      (item) => !newAccounts.has(item.id) || usedAccounts.has(item.id),
+    ),
+  };
+}

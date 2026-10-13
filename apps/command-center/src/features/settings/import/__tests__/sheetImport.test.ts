@@ -45,4 +45,16 @@ describe('importing from another app', () => {
       false,
     );
   });
+
+  it('adds nothing when the same plan is approved twice', () => {
+    let n = 0;
+    const read = readExpenseSheet(sheet);
+    const first = planSheetImport(read, useExpenseStore.getState(), () => `a-${(n += 1)}`);
+    useExpenseStore.getState().addImported(first);
+    // approving plans again against the ledger as it is now
+    const second = planSheetImport(read, useExpenseStore.getState(), () => `b-${(n += 1)}`);
+    expect(second.transactions).toEqual([]);
+    expect(second.accounts).toEqual([]);
+    expect(second.categories).toEqual([]);
+  });
 });
