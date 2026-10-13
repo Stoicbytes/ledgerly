@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { comparisonLabel } from '@/features/expenses/format';
 import { useLedger } from '@/features/expenses/hooks/useLedger';
 import { useFundsView, useStocksView } from '@/features/investments/hooks/useInvestments';
+import { useSalaryStore } from '@/features/salary/state/salaryStore';
 import {
   accountBalances,
   budgetStatus,
@@ -17,15 +18,18 @@ import {
   sortAccounts,
   todayIso,
 } from '@/lib/domain/expenses';
+import { pfBalance } from '@/lib/domain/salary';
 
 /**
  * Overview figures. Cash flow, spending and accounts come from the expense ledger,
- * funds and stocks from the investment pages (the same numbers in both places).
+ * funds and stocks from the investment pages, PF from Salary & PF (the same numbers in
+ * both places).
  */
 export function useOverviewData() {
   const { accounts, categories, transactions } = useLedger();
   const fundsView = useFundsView();
   const stocksView = useStocksView();
+  const pfEntries = useSalaryStore((state) => state.pfEntries);
   return useMemo(() => {
     const today = todayIso();
     const month = monthOf(today);
@@ -45,6 +49,8 @@ export function useOverviewData() {
     const cash = everyday.reduce((sum, item) => sum + item.balance, 0);
     const funds = fundsView.totals;
     const stocks = stocksView.totals;
+    // Credited PF only (your share and the employer's); the pension share is not a balance.
+    const pf = pfBalance(pfEntries).total;
     const budget = budgetStatus(categories, transactions, month);
     const sorted = [...transactions].sort(
       (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
@@ -61,7 +67,8 @@ export function useOverviewData() {
         .filter((item) => item.kind === 'transfer' && inRange(item, range))
         .filter((item) => item.toAccountId !== null && investmentIds.has(item.toAccountId))
         .reduce((sum, item) => sum + item.amount, 0),
-      netWorth: cash + funds.value + stocks.value,
+      netWorth: cash + funds.value + stocks.value + pf,
+      pf,
       accounts: everyday,
       flow: monthlySeries(month, 8, transactions).map((item) => ({
         ...item,
@@ -74,7 +81,7 @@ export function useOverviewData() {
       funds: { ...funds, series: held(fundsView.series.value) },
       stocks: { ...stocks, series: held(stocksView.series.value) },
     };
-  }, [accounts, categories, transactions, fundsView, stocksView]);
+  }, [accounts, categories, transactions, fundsView, stocksView, pfEntries]);
 }
 
 /** Drops the months before anything was held, so the sparkline starts at the first value. */

@@ -1,10 +1,6 @@
 import { useSession } from '@/features/auth/sessionStore';
 import { cleanUnusedReceipts } from '@/features/expenses/photos/receipts';
-import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
-import { useRecurringStore } from '@/features/expenses/state/recurringStore';
-import { useGoalStore } from '@/features/investments/state/goalStore';
 import { useMarketStore } from '@/features/investments/state/marketStore';
-import { getPortfolio, usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { useNotesStore } from '@/features/notes/state/notesStore';
 import { EMPTY_PORTFOLIO } from '@/lib/domain/investments';
 import {
@@ -15,6 +11,7 @@ import {
 } from '@/lib/data/ledgerRepository';
 import { RpcError } from '@/lib/data/rpc';
 import { addsHoldings } from './holdings';
+import { applyToStores, snapshot, subscribeToStores } from './stores';
 import { watchLifecycle } from './lifecycle';
 import { useSyncStatus } from './syncStatus';
 
@@ -41,30 +38,8 @@ let pending = false;
 let attempt = 0;
 let loadedAt = 0;
 
-const snapshot = (): CloudData => {
-  const { accounts, categories, people, transactions } = getLedger();
-  const notes = useNotesStore.getState().notes;
-  const { rules, available } = useRecurringStore.getState();
-  const recurring = available ? rules : undefined;
-  const goalState = useGoalStore.getState();
-  const goals = goalState.available ? goalState.goals : undefined;
-  const portfolio = getPortfolio();
-  return { accounts, categories, people, transactions, notes, portfolio, recurring, goals };
-};
-
 const setStatus = (status: Parameters<ReturnType<typeof useSyncStatus.getState>['set']>[0]) =>
   useSyncStatus.getState().set(status);
-
-function applyToStores(data: CloudData) {
-  const { notes, portfolio, recurring, goals, noteExtras, ...ledger } = data;
-  useExpenseStore.setState(ledger);
-  // Without migration 0012 there is nowhere to keep recurring entries: Repeat is hidden.
-  useRecurringStore.setState({ rules: recurring ?? [], available: recurring !== undefined });
-  useGoalStore.setState({ goals: goals ?? [], available: goals !== undefined });
-  // Without migration 0015, deleted notes cannot wait in Recently deleted: delete removes them.
-  useNotesStore.setState({ notes, extras: noteExtras === true });
-  usePortfolioStore.setState(portfolio);
-}
 
 function clearTimer() {
   if (timer) clearTimeout(timer);
@@ -111,11 +86,7 @@ export async function startCloudSync(): Promise<void> {
   // Tidying Storage is best-effort; a failure changes nothing the user sees.
   cleanUnusedReceipts(data.transactions).catch(() => undefined);
   unsubscribers = [
-    useExpenseStore.subscribe(() => schedule()),
-    useNotesStore.subscribe(() => schedule()),
-    usePortfolioStore.subscribe(() => schedule()),
-    useRecurringStore.subscribe(() => schedule()),
-    useGoalStore.subscribe(() => schedule()),
+    ...subscribeToStores(() => schedule()),
     // A change made just before the app is hidden is sent at once (phones often close
     // hidden tabs without warning); leaving the page with a change unsaved asks first.
     watchLifecycle({

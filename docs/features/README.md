@@ -74,6 +74,35 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 - **Edge cases:** checklist and label sizes are bounded in the database; see
   [`EDGE_CASES.md`](../architecture/EDGE_CASES.md).
 
+## Salary and PF
+
+- **Purpose:** every payslip and the PF account, across job changes: nothing is tied to one
+  company. Replaces the spreadsheet's salary and PF sheets.
+- **Access:** Salary & PF (desktop rail; **More** on phones). Tabs: Payslips, PF / EPF, Employers.
+- **Payslips:** one per employer and month, with the lines as printed (earnings and other
+  deductions), employee EPF, VPF, TDS and the employer's EPF and pension shares. A new payslip
+  starts from the last one, a month later. Saving can record the net pay as an income entry (and
+  updates it later). Totals by financial year: gross, net, TDS, your PF and the employer's, per
+  employer when there were several.
+- **PF / EPF:** the balance is your share (EPF + VPF + interest) and the employer's EPF share,
+  less withdrawals; pension (EPS) is shown apart because it is not a withdrawable balance. Each
+  payslip adds its month's contribution. Interest counts only once entered from the passbook (the
+  rate EPFO declared for that year); the app estimates it the EPFO way (monthly balances at a
+  twelfth of the rate) to check against, and lists finished years still missing it. Opening
+  balances, withdrawals and months without a payslip are entered by hand. PF counts in net worth.
+- **Privacy:** no UAN, member ID, PAN or other identity number is asked for or stored.
+- **Code:** `features/salary/` (screen, sheets, `state/`), `lib/domain/salary/` (pay totals,
+  PF balance, interest estimate), `lib/data/salaryRows.ts`.
+- **Data:** migration 0016, through `load_ledger` / `sync_ledger`.
+
+## Export everything
+
+Settings → **Export everything** saves one JSON file (`ledgerly-export-<date>.json`) with all your
+data: accounts, categories, people, entries, recurring entries, notes (Recently deleted too),
+funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfolio site's content.
+Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
+`features/settings/exportAll.ts`, `ExportCard.tsx`.
+
 ## Mutual funds, stocks and tradebook import
 
 - **Purpose:** real returns on investments (FIFO gains, XIRR), SIP tracking, net worth.

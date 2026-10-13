@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Download, Scale } from '@/components/icons';
 import { EmptyState, useToast } from '@/components/feedback';
 import { Button, Chip, Money, ScrollRow, Text } from '@/components/ui';
-import { saveCsv } from '@/features/expenses/export/saveCsv';
+import { saveTextFile } from '@/lib/files/saveTextFile';
 import { usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { dayLabel } from '@/lib/domain/expenses';
 import {
@@ -38,7 +38,7 @@ export function CapitalGainsPanel() {
   const exportCsv = async () => {
     if (!fy) return;
     try {
-      await saveCsv(gainsCsv(own), `capital-gains-${fy.slice(3)}.csv`);
+      await saveTextFile(gainsCsv(own), `capital-gains-${fy.slice(3)}.csv`);
     } catch {
       toast.show({ message: 'Could not export. Try again.' });
     }

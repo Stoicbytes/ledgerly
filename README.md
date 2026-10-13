@@ -15,7 +15,8 @@ Supabase provides authentication, the database and storage. Amounts are in India
 | Mutual funds   | AMFI scheme search and daily NAVs; purchases, SIPs and redemptions; FIFO cost, XIRR, allocation; capital gains by financial year; goals, costs and SIP step-up        |
 | Stocks         | Buys, sales, dividends, bonus issues and splits; FIFO profit and loss; end-of-day NSE/BSE prices; sectors and movers; comparison with an index fund                   |
 | Import         | Zerodha tradebooks for funds and shares, read on the device; every trade is reviewed (possible duplicates unticked) before anything is saved                          |
-| Overview       | Net worth across accounts, funds and shares                                                                                                                           |
+| Salary & PF    | Payslips per employer and month across job changes, yearly totals and TDS; the PF passbook with interest estimates, pension apart                                     |
+| Overview       | Net worth across accounts, funds, shares and PF                                                                                                                       |
 | Notes          | Text notes and checklists with colours, pins, labels, reminders, archive, search and Recently deleted                                                                 |
 | Portfolio site | Profile, projects, skills and experience edited in the dashboard, previewed privately and published as a snapshot                                                     |
 
@@ -37,7 +38,7 @@ product definition is in [`docs/PRODUCT.md`](docs/PRODUCT.md).
 apps/command-center/   The app (Expo Router, React Native Web) and the Vercel project that
                        serves both sites
 apps/portfolio/        The public portfolio (Vite + React, server-rendered)
-supabase/migrations/   Database schema, rules and functions, applied in order (0004–0015)
+supabase/migrations/   Database schema, rules and functions, applied in order (0004–0017)
 supabase/functions/    market-refresh: AMFI NAVs and exchange closing prices, fetched server-side
 docs/                  Product definition, architecture, decisions and feature guides
 SUPABASE_SETUP.md      Setting up and verifying the Supabase project
@@ -91,7 +92,8 @@ no sign-in. Checks and project structure: [`apps/command-center/README.md`](apps
 - Edits to the same entry on two devices at the same moment: the last save wins. Changes made
   elsewhere appear when you return to the app.
 - Share prices are end of day; there is no free official live-quote source.
-- Account deletion and a full data export are not in the app yet (expenses export to CSV).
+- Account deletion is not in the app yet. Settings → **Export everything** saves all your data as
+  one JSON file.
 - The whole ledger loads at sign-in, which suits personal scale.
 
 ## Security

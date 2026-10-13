@@ -1,5 +1,4 @@
 import type { RecurringEntry } from '@/lib/domain/expenses';
-import { diffById } from '@/lib/domain/sync';
 
 /** `recurring_entries` (migration 0012) to and from the app. */
 type Row = Record<string, unknown>;
@@ -41,11 +40,5 @@ const recurringRow = (r: RecurringEntry) => ({
 });
 
 /** What changed in the recurring entries (nothing is sent before migration 0012). */
-export function recurringChanges(
-  previous: RecurringEntry[] | undefined,
-  next: RecurringEntry[] | undefined,
-) {
-  return diffById(previous ?? [], next ?? [], recurringRow);
-}
 
 export { recurringRow };
