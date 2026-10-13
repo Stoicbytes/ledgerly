@@ -26,9 +26,14 @@ export function NetWorthCard({ data }: { data: OverviewData }) {
           adjustsFontSizeToFit
         />
         <Delta value={data.savings} format="money" variant="pill" comparison="saved this month" />
-        {data.pf ? (
+        {data.pf || data.cardDue ? (
           <Text variant="caption" color="textSecondary">
-            Includes PF {formatMoneyWhole(data.pf)}
+            {[
+              data.pf ? `Includes PF ${formatMoneyWhole(data.pf)}` : '',
+              data.cardDue ? 'Credit cards not counted' : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         ) : null}
       </View>
