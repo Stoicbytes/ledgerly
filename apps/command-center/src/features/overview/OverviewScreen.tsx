@@ -18,7 +18,7 @@ import { RemindersCard } from './RemindersCard';
 import { SpendingLimitCard } from './SpendingLimitCard';
 import { useOverviewData } from './useOverviewData';
 
-/** The command center home: net worth, cash flow, spending and investments. */
+/** The home screen: net worth, cash flow, spending and investments. */
 export function OverviewScreen() {
   const theme = useTheme();
   const data = useOverviewData();

@@ -1,6 +1,6 @@
 // PREVIEW SEED — weighted daily spending patterns used by seedTransactions.
 
-export type Pick = {
+export type SpendPick = {
   category: string;
   sub?: string;
   min: number;
@@ -9,7 +9,7 @@ export type Pick = {
   notes?: string[];
 };
 
-export const daily: { weight: number; picks: Pick[] }[] = [
+export const daily: { weight: number; picks: SpendPick[] }[] = [
   {
     weight: 40,
     picks: [

@@ -1,21 +1,19 @@
--- Phase 3.1: the expense manager and notes as real tables (plan §7 and §24, migration
--- 0005). Apply after 202610080004_auth_hardening.sql. Rollback:
--- supabase/rollbacks/202610080005_core_finance_down.sql.
+-- The expense manager and notes as real tables. Apply after 202610080004_foundation.sql.
 --
 -- Every user-owned table follows the same template:
 --   * user_id defaults to the caller, cannot change after insert, and is part of every
 --     reference (composite foreign keys), so a row can never point at another user's row
 --   * RLS enabled and forced, one policy per verb, own rows only
 --   * a RESTRICTIVE policy that requires two-step sign-in (aal2) for accounts that have
---     it turned on; the legacy app never reads these tables, so nothing breaks
+--     it turned on
 --   * CHECK constraints for every rule the app validates (never trust the client)
 --   * audit entries (which columns changed, never the values)
 --   * updated_at maintained by a trigger
 -- Money is integer paise (bigint); dates are local calendar dates.
--- Receipt photos are not stored yet (private storage arrives with Phase 5).
+-- Receipt photos are added by 202610120011_receipts.sql.
 
 -- ---------------------------------------------------------------------------
--- Shared helpers (internal schema from 0004)
+-- Shared helpers (internal schema from 202610080004_foundation.sql)
 -- ---------------------------------------------------------------------------
 
 -- True when the session may touch financial rows: always for accounts without a

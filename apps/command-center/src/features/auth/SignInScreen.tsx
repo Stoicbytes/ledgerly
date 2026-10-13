@@ -53,7 +53,7 @@ export function SignInScreen() {
   };
 
   return (
-    <AuthCard title="Sign in" description="Your private command center.">
+    <AuthCard title="Sign in" description="Your money and notes, private to you.">
       <TextField
         label="Email"
         value={email}

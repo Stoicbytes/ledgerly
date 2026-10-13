@@ -23,8 +23,8 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/favicon.png',
     // Single-page output: the dashboard's layout depends on window width, which a
-    // build-time render cannot know (it would always hydrate with mismatches).
-    // Revisit when the public portfolio is ported and needs pre-rendering for SEO.
+    // build-time render cannot know (it would always hydrate with mismatches). The public
+    // portfolio, which needs server rendering, is a separate app (apps/portfolio).
     output: 'single',
     bundler: 'metro',
   },

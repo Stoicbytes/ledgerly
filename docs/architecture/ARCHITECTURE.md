@@ -132,7 +132,7 @@ needed ([ROADMAP](ROADMAP.md) Platform track).
 
 | Group       | Tables                                                                                                 | Who can write                                                 |
 | ----------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Identity    | `profiles`, `user_preferences`, `audit_logs`; `internal.auth_allowlist`                                | The owner (own rows); audit log append-only                   |
+| Identity    | `audit_logs`; `internal.auth_allowlist`                                                                | The owner (own rows); audit log append-only                   |
 | Ledger      | `accounts`, `categories`, `people`, `transactions`, `transaction_splits`, `repayment_settles`, `notes` | The owner, own rows only                                      |
 | Investments | `mf_funds`, `mf_sips`, `mf_transactions`, `stocks`, `stock_trades`                                     | The owner, own rows only                                      |
 | Market data | `mf_schemes`, `mf_nav_history`, `securities`, `security_prices`, `market_refresh_runs`                 | Only the `market-refresh` function (service role); users read |
