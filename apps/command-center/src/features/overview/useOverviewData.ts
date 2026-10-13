@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { comparisonLabel } from '@/features/expenses/format';
 import { useLedger } from '@/features/expenses/hooks/useLedger';
 import { useFundsView, useStocksView } from '@/features/investments/hooks/useInvestments';
+import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { useSalaryStore } from '@/features/salary/state/salaryStore';
 import {
   accountBalances,
@@ -19,6 +20,7 @@ import {
   todayIso,
 } from '@/lib/domain/expenses';
 import { pfBalance } from '@/lib/domain/salary';
+import { cardDue, overviewInsights } from './insights';
 
 /**
  * Overview figures. Cash flow, spending and accounts come from the expense ledger,
@@ -30,6 +32,8 @@ export function useOverviewData() {
   const fundsView = useFundsView();
   const stocksView = useStocksView();
   const pfEntries = useSalaryStore((state) => state.pfEntries);
+  const payslips = useSalaryStore((state) => state.payslips);
+  const rules = useRecurringStore((state) => state.rules);
   return useMemo(() => {
     const today = todayIso();
     const month = monthOf(today);
@@ -46,7 +50,11 @@ export function useOverviewData() {
     const everyday = sortAccounts(accounts)
       .filter((account) => !investmentIds.has(account.id))
       .map((account) => ({ account, balance: balances.get(account.id) ?? 0 }));
-    const cash = everyday.reduce((sum, item) => sum + item.balance, 0);
+    // Credit cards stay out of net worth (you asked for it): what they are owed is shown
+    // as an insight instead.
+    const cash = everyday
+      .filter((item) => item.account.group !== 'card')
+      .reduce((sum, item) => sum + item.balance, 0);
     const funds = fundsView.totals;
     const stocks = stocksView.totals;
     // Credited PF only (your share and the employer's); the pension share is not a balance.
@@ -69,6 +77,16 @@ export function useOverviewData() {
         .reduce((sum, item) => sum + item.amount, 0),
       netWorth: cash + funds.value + stocks.value + pf,
       pf,
+      cardDue: cardDue(accounts, balances),
+      insights: overviewInsights({
+        today,
+        transactions,
+        categories,
+        accounts,
+        balances,
+        rules,
+        payslips,
+      }),
       accounts: everyday,
       flow: monthlySeries(month, 8, transactions).map((item) => ({
         ...item,
@@ -81,7 +99,7 @@ export function useOverviewData() {
       funds: { ...funds, series: held(fundsView.series.value) },
       stocks: { ...stocks, series: held(stocksView.series.value) },
     };
-  }, [accounts, categories, transactions, fundsView, stocksView, pfEntries]);
+  }, [accounts, categories, transactions, fundsView, stocksView, pfEntries, payslips, rules]);
 }
 
 /** Drops the months before anything was held, so the sparkline starts at the first value. */

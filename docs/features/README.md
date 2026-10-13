@@ -113,11 +113,17 @@ Amounts are in paise. Receipt photos stay in storage; each entry keeps its path.
 
 ## Overview
 
-- **Purpose:** the whole picture at a glance: net worth (accounts, funds, shares), cash flow,
-  budget use, recent activity.
+- **Purpose:** the whole picture at a glance: net worth (accounts, funds, shares, PF), insights,
+  cash flow, budget use, recent activity.
+- **Net worth:** credit card accounts are left out; what is owed on them shows as an insight.
+- **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
+  card dues, savings rate, spending pace against the same days last month, the month-end
+  course, the category that rose most, how many months your cash covers, recurring entries due
+  this week, the last salary and TDS this financial year, the largest expense. Nothing leaves
+  the device for this. Code: `features/overview/insights.ts` (tested), `InsightsCard.tsx`.
 - **Access:** `/dashboard`.
 - **Code:** `features/overview/` (`useOverviewData.ts` computes everything from the stores).
-- **Data:** none of its own; reads the expense, portfolio and market stores.
+- **Data:** none of its own; reads the expense, recurring, salary, portfolio and market stores.
 
 ## Portfolio (public site and editor)
 

@@ -10,6 +10,7 @@ import { SampleDataBadge } from '@/features/preview/SampleDataBadge';
 import { greeting } from '@/lib/formatting/greeting';
 import { useTheme } from '@/theme';
 import { CashflowCard } from './CashflowCard';
+import { InsightsCard } from './InsightsCard';
 import { InvestmentsSnapshot } from './InvestmentsSnapshot';
 import { KpiQuad } from './KpiQuad';
 import { NetWorthCard } from './NetWorthCard';
@@ -18,7 +19,7 @@ import { RemindersCard } from './RemindersCard';
 import { SpendingLimitCard } from './SpendingLimitCard';
 import { useOverviewData } from './useOverviewData';
 
-/** The home screen: net worth, cash flow, spending and investments. */
+/** The home screen: net worth, cash flow, insights, spending and investments. */
 export function OverviewScreen() {
   const theme = useTheme();
   const data = useOverviewData();
@@ -69,6 +70,7 @@ export function OverviewScreen() {
           <CashflowCard flow={data.flow} height={isMobile ? 180 : 250} />
         </BentoCell>
       </BentoRow>
+      <InsightsCard insights={data.insights} />
       <BentoRow stackBelow="desktop">
         <BentoCell flex={4}>
           <SpendingLimitCard budget={data.budget} top={data.topCategories} />

@@ -44,7 +44,7 @@ on web and phone from a single app.**
 4. **Track investments:** Mutual funds / Stocks → add holdings and transactions (or Import a
    Zerodha tradebook, reviewed before saving) → Update prices → holdings, gains (first in, first
    out), XIRR, allocation and growth.
-5. **Know net worth:** Overview adds accounts, funds and shares.
+5. **Know net worth:** Overview adds accounts, funds, shares and PF; credit card dues are shown apart, not subtracted.
 6. **Publish a portfolio:** Dashboard → Portfolio → edit → Preview → Publish; it is the home page
    of the site, with a Dashboard button to sign in.
 
@@ -68,7 +68,7 @@ app; unbuilt screens are hidden).
 | Stocks                                        | Trades, dividends, bonus/splits, FIFO P&L, XIRR, prices, vs an index     | Same as funds                                      | Same                                   | Working                               | Keep (core)                                                        |
 | Tradebook import                              | Read Zerodha files, review each trade (duplicates flagged), approve      | Typing every trade is error-prone                  | Fast, checked catch-up                 | Working (Zerodha only)                | Keep                                                               |
 | Price updates                                 | Server fetches AMFI and exchange closing prices                          | Valuations need prices                             | Up-to-date values                      | Working (needs the function deployed) | Keep; schedule it daily                                            |
-| Overview                                      | Net worth, cash flow, budget, recent activity, investments               | The "one place" promise                            | The whole picture at a glance          | Working                               | Keep (core)                                                        |
+| Overview                                      | Net worth, insights, cash flow, budget, recent activity, investments     | The "one place" promise                            | The whole picture at a glance          | Working                               | Keep (core)                                                        |
 | Portfolio (public site + editor)              | Developer portfolio at the site's home page, edited in the dashboard     | Owner's public professional profile                | Always current CV site, no redeploys   | Working                               | Keep, but it is a separate product sharing the app (see below)     |
 | App-wide Reports and Insights                 | Not built (hidden from the app; fund insights exist under Mutual funds)  | Future analysis features                           | None yet                               | Planned                               | Defer                                                              |
 | Global search (all modules), account deletion | Not built                                                                | Find anything; data ownership                      | None yet                               | Planned                               | Later (expense search and CSV export exist)                        |
