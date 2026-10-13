@@ -19,15 +19,22 @@
  * ceiling is 540 KiB; Expo Router's async routes were tried and made the total larger
  * (shared code is duplicated per route), so splitting needs its own piece of work. Salary &
  * PF (payslips across employers, the PF passbook with interest estimates) and the full JSON
- * export added ~12.6 KiB: the bundle is ~540 KiB and the ceiling 560 KiB. Phase 11
- * target from the plan: ≤ 350 KiB (route-level code splitting). Raise the ceiling only
- * deliberately, in the same PR that explains why.
+ * export added ~12.6 KiB: the bundle was ~540 KiB and the ceiling 560 KiB.
+ *
+ * October 2026: each screen is now its own file (Expo Router async routes on the web), so
+ * the page loads the framework and shared code first (~438 KiB) and a screen's file when
+ * it opens; the dashboard fetches the rest in the background once idle. Splitting adds a
+ * little shared overhead, so all files together are ~569 KiB. Two ceilings guard this:
+ * what the page loads before any screen (FIRST_LOAD) and all files together (TOTAL).
+ * Phase 11 target from the plan: ≤ 350 KiB first load. Raise a ceiling only deliberately,
+ * in the same PR that explains why.
  */
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const CEILING_KIB = 560;
+const FIRST_LOAD_CEILING_KIB = 450;
+const TOTAL_CEILING_KIB = 590;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');
@@ -37,17 +44,39 @@ if (!fs.existsSync(dir)) {
   process.exit(1);
 }
 
+const root = path.join(process.cwd(), 'dist');
+const page = ['index.html', 'dashboard.html']
+  .map((name) => path.join(root, name))
+  .find(fs.existsSync);
+const initial = new Set(
+  page
+    ? [...fs.readFileSync(page, 'utf8').matchAll(/src="\/_expo\/static\/js\/web\/([^"]+)"/g)].map(
+        (match) => match[1],
+      )
+    : [],
+);
+if (!initial.size) {
+  console.error('No script tags found in the exported page.');
+  process.exit(1);
+}
+
 let total = 0;
+let first = 0;
 for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.js'))) {
   const size = zlib.gzipSync(fs.readFileSync(path.join(dir, file)), { level: 9 }).length;
   total += size;
-  console.log(`${file}: ${(size / 1024).toFixed(1)} KiB gzip`);
+  if (initial.has(file)) first += size;
+  console.log(
+    `${file}: ${(size / 1024).toFixed(1)} KiB gzip${initial.has(file) ? ' (first load)' : ''}`,
+  );
 }
-const kib = total / 1024;
+const firstKib = first / 1024;
+const totalKib = total / 1024;
 console.log(
-  `Total: ${kib.toFixed(1)} KiB gzip (ceiling ${CEILING_KIB} KiB, target ${TARGET_KIB} KiB)`,
+  `First load: ${firstKib.toFixed(1)} KiB gzip (ceiling ${FIRST_LOAD_CEILING_KIB} KiB, target ${TARGET_KIB} KiB)`,
 );
-if (kib > CEILING_KIB) {
-  console.error('Web bundle exceeds the regression ceiling.');
+console.log(`All files: ${totalKib.toFixed(1)} KiB gzip (ceiling ${TOTAL_CEILING_KIB} KiB)`);
+if (firstKib > FIRST_LOAD_CEILING_KIB || totalKib > TOTAL_CEILING_KIB) {
+  console.error('Web bundle exceeds a regression ceiling.');
   process.exit(1);
 }

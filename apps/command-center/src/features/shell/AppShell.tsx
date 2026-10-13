@@ -1,5 +1,6 @@
 import type { Href } from 'expo-router';
 import { TabList, Tabs, TabSlot, TabTrigger } from 'expo-router/ui';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { IdleWarning } from '@/features/auth/IdleWarning';
 import { useIdleSignOut } from '@/features/auth/useIdleSignOut';
@@ -12,6 +13,7 @@ import { FloatingTabBar } from './FloatingTabBar';
 import { LeftRail } from './LeftRail';
 import { MobileHeader } from './MobileHeader';
 import { destinations } from './navigation';
+import { prefetchScreens } from './prefetchScreens';
 
 /**
  * Adaptive frame on Expo Router's headless tabs. The hidden TabList declares
@@ -23,6 +25,7 @@ export function AppShell() {
   const theme = useTheme();
   const { isMobile } = useBreakpoint();
   const idle = useIdleSignOut();
+  useEffect(prefetchScreens, []);
   return (
     <View
       style={{ flex: 1 }}

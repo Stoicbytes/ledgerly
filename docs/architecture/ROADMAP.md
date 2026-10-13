@@ -121,7 +121,8 @@ Small, high-value engineering steps ([report](AUDIT_2026-10.md)):
    unsaved edit).
 2. ~~Decide on the placeholders~~ (done: hidden until built). Build search and data export next.
 3. ~~Store receipt photos~~ (done: private `receipts` bucket, migration 0011).
-4. Route-level code splitting to bring the web bundle towards its 350 KiB target.
+4. ~~Route-level code splitting~~ (done: screens load on demand, subset fonts; first load
+   ~440 KiB, see [ADR 0012](decisions/0012-web-loads-screens-on-demand.md)).
 5. Load history by period instead of all at once, when the ledger grows large.
 
 ### PF / EPF and salary payslips (done)
@@ -227,7 +228,8 @@ quick add for anything.
 
 - Threat-model review with tests for each control. CI already installs every migration on an
   empty database; the behaviour tests for each migration (run locally before it ships) can join it.
-- Route-level code splitting (web bundle to ≤ 350 KiB); performance budgets per screen.
+- Performance budgets per screen; the first load (~440 KiB) is mostly framework, so the 350 KiB
+  target needs a lighter framework rather than more splitting (ADR 0012).
 - Error reporting with a scrubber that never sends amounts, notes or tokens (optional Sentry).
 
 ## What premium apps do, and how we do it

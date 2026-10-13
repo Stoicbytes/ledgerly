@@ -5,6 +5,9 @@ import { AppShell } from '@/features/shell/AppShell';
 import { CloudGate } from '@/features/sync/CloudGate';
 import { useTheme } from '@/theme';
 
+// Here too, so an error inside the dashboard keeps its address (the root one resets it).
+export { ErrorBoundary } from '@/features/shell/UpdateErrorBoundary';
+
 // Requires a session when Supabase is configured; without a project the app runs as a
 // labelled preview. This guard is convenience only: Row Level Security is what keeps
 // data private.

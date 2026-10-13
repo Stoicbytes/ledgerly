@@ -1,7 +1,3 @@
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -10,18 +6,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastProvider } from '@/components/feedback';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { ThemeProvider, useTheme } from '@/theme';
+import { interFonts } from '@/theme/fonts';
 
-export { ErrorBoundary } from 'expo-router';
+export { ErrorBoundary } from '@/features/shell/UpdateErrorBoundary';
 
 export default function RootLayout() {
-  // Fonts ship inside the bundle (no runtime request to Google). Native waits for
-  // them to avoid unregistered-font warnings; web renders immediately with fallback.
-  const [loaded, error] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  // Fonts ship with the app (no runtime request to Google); web gets small subset WOFF2
+  // files. Native waits for them to avoid unregistered-font warnings; web renders
+  // immediately with the fallback font.
+  const [loaded, error] = useFonts(interFonts);
   if (!loaded && !error && Platform.OS !== 'web') return null;
 
   return (
