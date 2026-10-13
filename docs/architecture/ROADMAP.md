@@ -19,7 +19,7 @@ it is in [`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](d
 | Export everything           | **Done**        | One JSON file with all your data (Settings)                                                                                                  |
 | Public portfolio            | **Built**       | The site's home page, edited in Dashboard → Portfolio and published as a snapshot; Dashboard button opens the app; needs migration 0010      |
 | Old app's data              | Retired         | Not imported (your decision) and deleted from the database. The ledger starts from scratch                                                   |
-| App-wide Reports, Insights  | Not built       | Hidden from the app until they work; fund insights are under Mutual funds                                                                    |
+| Reports                     | Working         | Month, year or financial year, with a PDF; Overview has rule-based insights                                                                  |
 | Receipt photos              | **Done, saved** | Private Storage bucket, one-minute links; needs migration 0011                                                                               |
 | Expense extras              | **Done**        | Recurring entries (migration 0012), search with totals, CSV export, calculator in the amount; the calendar is the default view               |
 | Fund extras                 | **Done**        | Capital gains by financial year, goals, expense ratio and yearly cost, similar-fund hint, SIP step-up (migration 0013)                       |
@@ -188,8 +188,9 @@ are never read or stored.
 
 ### Reports and insights
 
-- Monthly review: income, spending by category, savings rate, net worth change, investment
-  performance; exportable CSV and PDF.
+- Built: Reports (income, spending by category, savings rate, investments, salary and PF for a
+  month, year or financial year, with a PDF). Next: net worth change over the period and
+  investment returns in the report.
 - Rule-based insights first: unusual spending, budget pace, idle cash, SIPs missed, FD maturing,
   card due, insurance renewal.
 - Optional AI summaries, **off by default**: only with an explicit opt-in setting, only

@@ -9,6 +9,7 @@ const screens = [
   () => import('@/app/dashboard/stocks'),
   () => import('@/app/dashboard/notes'),
   () => import('@/app/dashboard/salary'),
+  () => import('@/app/dashboard/reports'),
   () => import('@/app/dashboard/settings'),
 ];
 

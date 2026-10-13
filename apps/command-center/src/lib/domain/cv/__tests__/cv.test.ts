@@ -3,7 +3,7 @@ import { crc32 } from '@/lib/files/zipWrite';
 import { fixtureSite } from '../__fixtures__/site';
 import { atsReport, atsKeywords, buildCv, cvDocx, cvFileName, cvPdf, cvPlainText } from '..';
 import { dateRange, displayUrl, firstSentences, plainText } from '../text';
-import { toWinAnsi } from '../winAnsi';
+import { toWinAnsi } from '@/lib/files/pdf/winAnsi';
 
 const cv = () =>
   buildCv(fixtureSite(), { phone: '+91 98765 43210', siteUrl: 'https://asha.example.dev/' });
