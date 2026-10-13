@@ -46,6 +46,10 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   by words, an amount, type, period, category and account, with totals; **Export** saves the
   results (or everything) as CSV for Excel. Cells that would run as formulas are neutralised
   (`lib/domain/expenses/csv.ts`). Web: a file download; phones: the share sheet.
+- **Search everything:** typed words also find notes and checklists (not deleted ones), funds,
+  goals, shares, employers and payslips (by employer, month or pay line), up to five of each,
+  above the entries; a tap opens that screen. Folio and member numbers are never searched.
+  Code: `lib/domain/search/everything.ts` (tested), `search/EverythingResults.tsx`.
 - **Recurring entries** (`recurring/`, `state/recurring*.ts`): **Repeat** on a new entry (daily,
   weekly, monthly, yearly; monthly keeps the day, using the month's last day when shorter). Due
   dates appear on Transactions: **Add** opens the sheet with the amount ready to change, **Skip**
@@ -170,5 +174,5 @@ since uses them. Web only for now (phones need a file picker). Code:
 
 ## Not built (hidden)
 
-App-wide Reports and search across every module are not in the app (their "Planned"
+App-wide Reports are not in the app (their "Planned"
 placeholders were removed in October 2026). See [`../PRODUCT.md`](../PRODUCT.md).

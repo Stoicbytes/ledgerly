@@ -18,6 +18,7 @@ import { saveTextFile } from '@/lib/files/saveTextFile';
 import { formatEntry } from '../format';
 import { useLedger } from '../hooks/useLedger';
 import { useSearchStore } from '../state/searchStore';
+import { EverythingResults } from './EverythingResults';
 import { SearchFilterChips } from './SearchFilterChips';
 
 /** Results shown at once; the totals and the export always cover every match. */
@@ -59,8 +60,8 @@ export function SearchSheet() {
     <Sheet
       visible={open}
       onClose={hide}
-      title="Search entries"
-      description="Every month at once. A number finds that amount."
+      title="Search everything"
+      description="Entries in every month, plus notes, funds, goals, shares and salary. A number finds that amount."
       width={720}
       footer={
         <>
@@ -88,14 +89,15 @@ export function SearchSheet() {
           autoFocus
         />
         <SearchFilterChips />
+        {filters.text.trim() ? <EverythingResults query={filters.text} onOpen={hide} /> : null}
         {!searching ? (
           <EmptyState
             icon={Search}
-            title="Search your entries"
+            title="Search Ledgerly"
             body="Type a word or amount, or pick a type, period, category or account."
           />
         ) : !results.length ? (
-          <EmptyState icon={Search} title="Nothing found" body="Try fewer words or filters." />
+          <EmptyState icon={Search} title="No entries found" body="Try fewer words or filters." />
         ) : (
           <View style={{ gap: theme.space[2] }}>
             <Text variant="label" color="textSecondary" accessibilityLiveRegion="polite">

@@ -1,5 +1,7 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { accounts, categories, transactions } from '@/lib/domain/expenses/__fixtures__/ledger';
+import { router } from 'expo-router';
+import { useNotesStore } from '@/features/notes/state/notesStore';
 import { renderWithProviders } from '@/test/render';
 import { saveTextFile } from '@/lib/files/saveTextFile';
 import { useExpenseStore } from '../../state/expenseStore';
@@ -8,6 +10,7 @@ import { periodRange } from '../SearchFilterChips';
 import { SearchSheet } from '../SearchSheet';
 
 jest.mock('@/lib/files/saveTextFile', () => ({ saveTextFile: jest.fn(async () => undefined) }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -17,13 +20,26 @@ beforeEach(() => {
 });
 
 describe('SearchSheet', () => {
+  it('also finds notes and opens them', async () => {
+    const note = useNotesStore.getState().notes[0];
+    useNotesStore.setState({
+      notes: [{ ...note, id: 'zz', title: 'Passport renewal', trashedAt: null }],
+    });
+    await renderWithProviders(<SearchSheet />);
+    await fireEvent.changeText(screen.getByLabelText('Search'), 'passport');
+    expect(screen.getByText('Notes')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: /^Passport renewal/ }));
+    expect(router.push).toHaveBeenCalledWith('/dashboard/notes');
+    expect(useSearchStore.getState().open).toBe(false);
+  });
+
   it('finds entries by word, with totals', async () => {
     await renderWithProviders(<SearchSheet />);
-    expect(screen.getByText('Search your entries')).toBeTruthy();
+    expect(screen.getByText('Search Ledgerly')).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('Search'), 'tea');
     expect(screen.getByText('2 entries · spent ₹90 · received ₹0')).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('Search'), 'nothing-like-this');
-    expect(screen.getByText('Nothing found')).toBeTruthy();
+    expect(screen.getByText('No entries found')).toBeTruthy();
   });
 
   it('filters by type and category chips', async () => {
