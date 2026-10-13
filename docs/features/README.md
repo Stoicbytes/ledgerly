@@ -103,6 +103,37 @@ funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfol
 Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
 `features/settings/exportAll.ts`, `ExportCard.tsx`.
 
+## Import from another app
+
+Settings → **Import from another app** reads an .xlsx or .csv export from another expense app
+(the Money Manager layout: Period, Accounts, Category, Subcategory, Note, Description, Amount,
+Income/Expense) on the device; the file is not uploaded or kept. A review lists what would be
+added before anything is saved:
+
+- **Entries:** expenses and income, with the time of day kept for ordering. Note and Description
+  are joined (120 characters at most).
+- **Dates:** Excel dates, `2026-08-14 10:49`, `14/08/2026` or `8/14/26 7:05 PM`. Whether text
+  dates are day-first or month-first is decided from the whole file (day-first when it cannot
+  tell). Dates outside 1900–2100 are left out.
+- **Amounts:** numbers or text such as `₹1,234.50`; zero, negative or unreadable amounts are
+  left out.
+- **Accounts and categories:** matched to yours by name (ignoring case and spaces); missing ones
+  are created, with names cut to the database's limits (accounts 60 characters, categories 40).
+  New accounts start at a ₹0 opening balance: set it in Accounts so balances match.
+- **Left out, with the reason:** balance corrections, transfers, unreadable dates or amounts.
+- **Already there:** entries with the same day, type, amount, account and note are skipped, so
+  importing the same file twice adds nothing.
+- **Large files:** at most 4,000 entries per import (one save takes up to 5,000 rows); the
+  oldest go first and importing the same file again adds the rest. Files over 5 MB, and old
+  .xls files, are refused with what to do instead.
+
+**Import** plans again against the ledger as it is at that moment, so a double press or edits
+made meanwhile add no duplicates. **Undo import** (while the card is open) removes exactly the
+imported entries, and the accounts and categories the import created unless something added
+since uses them. Web only for now (phones need a file picker). Code:
+`lib/domain/expenses/sheetImport.ts`, `sheetDates.ts`, `sheetImportPlan.ts` (tested),
+`features/settings/import/`.
+
 ## Mutual funds, stocks and tradebook import
 
 - **Purpose:** real returns on investments (FIFO gains, XIRR), SIP tracking, net worth.
@@ -136,5 +167,5 @@ Amounts are in paise. Receipt photos stay in storage; each entry keeps its path.
 
 ## Not built (hidden)
 
-Reports, Goals, Insights, search and data export are not in the app (their "Planned"
+App-wide Reports and search across every module are not in the app (their "Planned"
 placeholders were removed in October 2026). See [`../PRODUCT.md`](../PRODUCT.md).

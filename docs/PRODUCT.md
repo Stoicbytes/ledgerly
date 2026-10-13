@@ -70,10 +70,10 @@ app; unbuilt screens are hidden).
 | Price updates                                 | Server fetches AMFI and exchange closing prices                          | Valuations need prices                             | Up-to-date values                      | Working (needs the function deployed) | Keep; schedule it daily                                            |
 | Overview                                      | Net worth, insights, cash flow, budget, recent activity, investments     | The "one place" promise                            | The whole picture at a glance          | Working                               | Keep (core)                                                        |
 | Portfolio (public site + editor)              | Developer portfolio at the site's home page, edited in the dashboard     | Owner's public professional profile                | Always current CV site, no redeploys   | Working                               | Keep, but it is a separate product sharing the app (see below)     |
-| App-wide Reports and Insights                 | Not built (hidden from the app; fund insights exist under Mutual funds)  | Future analysis features                           | None yet                               | Planned                               | Defer                                                              |
+| App-wide Reports                              | Not built (hidden from the app; fund insights exist under Mutual funds)  | Future analysis features                           | None yet                               | Planned                               | Defer                                                              |
 | Global search (all modules), account deletion | Not built                                                                | Find anything; data ownership                      | None yet                               | Planned                               | Later (expense search and CSV export exist)                        |
-| Import from your other app                    | Planned (waiting for its export file)                                    | Bring old history in                               | Continuity                             | Planned                               | Next on the roadmap                                                |
-| PF/EPF tracker, salary payslips               | Planned                                                                  | Complete the net-worth picture                     | Retirement savings visible             | Planned                               | After import                                                       |
+| Import from another app                       | Read its .xlsx/.csv export, review, import, undo                         | Bring old history in                               | Continuity                             | Working (expenses and income)         | Keep                                                               |
+| PF/EPF tracker, salary payslips               | Payslips, PF passbook across employers                                   | Complete the net-worth picture                     | Retirement savings visible             | Working                               | Keep                                                               |
 
 ## Recommended direction
 
@@ -84,10 +84,9 @@ app; unbuilt screens are hidden).
   lost or doubled).
 - **Minimum essential set:** sign-in and security, expenses (entries, accounts, categories,
   stats, budget), funds and stocks with prices, Overview.
-- **Postpone:** Reports, Goals and Insights. They are hidden until they do something, so the app
-  does not promise what it cannot do.
-- **Clear next value:** global search, data export (your own backup), the import from your
-  current app, then PF/EPF.
+- **Postpone:** app-wide Reports. Hidden until they do something, so the app does not promise
+  what it cannot do.
+- **Clear next value:** global search across modules, then the phone apps.
 - **Avoid:** more modules before the core is complete (habit trackers, journals, AI assistants);
   real-time multi-device sync machinery (one person rarely edits on two devices at once; a reload
   on return is enough); paid market-data feeds before end-of-day prices prove insufficient.
