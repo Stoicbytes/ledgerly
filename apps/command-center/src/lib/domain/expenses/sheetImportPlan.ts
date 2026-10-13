@@ -4,7 +4,7 @@ import type { Account, AccountGroup, Category, CategoryKind, Transaction } from 
 
 /**
  * What importing a sheet would add: new accounts and categories (matched to yours by name,
- * ignoring case and spaces), the entries, and what is left out. Entries already in your
+ * ignoring case, spaces and emoji), the entries, and what is left out. Entries already in your
  * ledger (same day, type, amount, account and note) are skipped, so a file can be imported
  * again safely.
  */
@@ -33,10 +33,16 @@ const CATEGORY_NAME = 40;
 
 type Ledger = { accounts: Account[]; categories: Category[]; transactions: Transaction[] };
 
-/** Trimmed, single-spaced and cut to `max` characters (emoji count as one). */
+/** Emoji (with their skin-tone, joiner and variation marks) are left out of names. */
+const EMOJI =
+  /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u200d\ufe0f\u20e3]/gu;
+
+/** Without emoji, trimmed, single-spaced and cut to `max` characters. */
 export const cleanName = (name: string, max: number) =>
-  Array.from(name.trim().replace(/\s+/g, ' ')).slice(0, max).join('').trim();
-const key = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
+  Array.from(name.replace(EMOJI, '').trim().replace(/\s+/g, ' ')).slice(0, max).join('').trim();
+/** Names match ignoring case, spaces and emoji ("🍔 Food" is Food). */
+const key = (name: string) => cleanName(name, Number.MAX_SAFE_INTEGER).toLowerCase();
+const noteKey = (note: string) => note.trim().replace(/\s+/g, ' ').toLowerCase();
 const nextOrder = (items: { order: number }[]) =>
   items.reduce((max, item) => Math.max(max, item.order + 1), 0);
 const TINTS = 8;
@@ -75,7 +81,7 @@ export const guessCategoryIcon = (name: string) =>
   ICON_WORDS.find(([pattern]) => pattern.test(name.toLowerCase()))?.[1] ?? 'other';
 
 const entryKey = (t: Pick<Transaction, 'date' | 'kind' | 'amount' | 'accountId' | 'note'>) =>
-  `${t.date}|${t.kind}|${t.amount}|${t.accountId}|${key(t.note)}`;
+  `${t.date}|${t.kind}|${t.amount}|${t.accountId}|${noteKey(t.note)}`;
 
 export function planSheetImport(
   read: SheetRead,
@@ -97,7 +103,7 @@ export function planSheetImport(
   };
 
   const accountFor = (raw: string) => {
-    const name = cleanName(raw, ACCOUNT_NAME);
+    const name = cleanName(raw, ACCOUNT_NAME) || 'Imported';
     const found = accounts.find((item) => key(item.name) === key(name));
     if (found) return found.id;
     const account: Account = {
@@ -159,9 +165,10 @@ export function planSheetImport(
       plan.remaining += 1;
       continue;
     }
-    const parent = row.category ? categoryFor(row.kind, row.category, null) : null;
+    // A name that is only emoji is no category: the entry stays, uncategorised or under the parent.
+    const parent = key(row.category) ? categoryFor(row.kind, row.category, null) : null;
     const leaf =
-      parent && row.subcategory ? categoryFor(row.kind, row.subcategory, parent) : parent;
+      parent && key(row.subcategory) ? categoryFor(row.kind, row.subcategory, parent) : parent;
     plan.transactions.push({
       id: newId(),
       kind: row.kind,

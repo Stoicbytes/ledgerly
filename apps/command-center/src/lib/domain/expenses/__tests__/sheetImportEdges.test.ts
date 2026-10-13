@@ -84,9 +84,9 @@ describe('amounts in exports', () => {
 });
 
 describe('names the database would refuse', () => {
-  it('cuts account names to 60 and category names to 40 characters, emoji whole', () => {
+  it('cuts account names to 60 and category names to 40 characters', () => {
     expect(cleanName('  a   b  ', 60)).toBe('a b');
-    expect(cleanName('🙂'.repeat(50), 40)).toBe('🙂'.repeat(40));
+    expect(cleanName('அ'.repeat(50), 40)).toBe('அ'.repeat(40));
     const long = 'A very long bank account name that goes on and on beyond sixty characters';
     const sheet = [
       HEADER,
@@ -168,5 +168,45 @@ describe('undoing an import', () => {
     );
     expect(after.accounts).toHaveLength(1);
     expect(after.transactions).toEqual([{ ...repayment, settles: ['other'] }]);
+  });
+});
+
+describe('emoji in names', () => {
+  const sheet = [
+    HEADER,
+    ['2026-08-14', 'Bank', '🙂', '', 'Treat', 50, 'Exp.'],
+    ['2026-08-14', 'Bank', 'Food 🍔', 'Tea ☕️', 'Tea ☕', 10, 'Exp.'],
+    ['2026-08-14', 'Bank', 'Food', '👍🏽', 'Snack', 20, 'Exp.'],
+    ['2026-08-14', '💳', 'Food', '', '', 30, 'Exp.'],
+  ];
+
+  it('leaves emoji out of names and imports emoji-only categories as uncategorised', () => {
+    expect(cleanName(' 🍔  Food 👨‍👩‍👧 ', 40)).toBe('Food');
+    const plan = planSheetImport(readExpenseSheet(sheet), empty, newId);
+    expect(plan.transactions).toHaveLength(4);
+    expect(plan.categories.map((item) => item.name)).toEqual(['Food', 'Tea']);
+    const by = (amount: number) => plan.transactions.find((item) => item.amount === amount)!;
+    expect(by(50_00).categoryId).toBeNull();
+    // an emoji-only subcategory files the entry under its parent
+    expect(by(20_00).categoryId).toBe(plan.categories[0].id);
+    expect(plan.accounts.map((item) => item.name)).toEqual(['Bank', 'Imported']);
+    // notes keep their emoji
+    expect(by(10_00).note).toBe('Tea ☕');
+  });
+
+  it('matches your categories that carry emoji', () => {
+    const food: Category = {
+      id: 'food',
+      kind: 'expense',
+      parentId: null,
+      name: '🍔 Food',
+      icon: 'food',
+      tint: 0,
+      budget: null,
+      order: 0,
+    };
+    const plan = planSheetImport(readExpenseSheet(sheet), { ...empty, categories: [food] }, newId);
+    expect(plan.categories.map((item) => item.name)).toEqual(['Tea']);
+    expect(plan.categories[0].parentId).toBe('food');
   });
 });

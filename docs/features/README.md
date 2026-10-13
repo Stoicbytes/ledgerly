@@ -117,7 +117,9 @@ added before anything is saved:
   tell). Dates outside 1900–2100 are left out.
 - **Amounts:** numbers or text such as `₹1,234.50`; zero, negative or unreadable amounts are
   left out.
-- **Accounts and categories:** matched to yours by name (ignoring case and spaces); missing ones
+- **Emoji:** left out of account, category and subcategory names (notes keep them). An entry
+  whose category is only an emoji is imported uncategorised (or under its parent category).
+- **Accounts and categories:** matched to yours by name (ignoring case, spaces and emoji); missing ones
   are created, with names cut to the database's limits (accounts 60 characters, categories 40).
   New accounts start at a ₹0 opening balance: set it in Accounts so balances match.
 - **Left out, with the reason:** balance corrections, transfers, unreadable dates or amounts.
