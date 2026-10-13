@@ -35,6 +35,11 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   `repayment_settles` through `load_ledger` / `sync_ledger`.
 - **State:** `useExpenseStore` holds the ledger; screens compute balances, totals and budgets
   from it (pure functions, tested).
+- **Budget alerts:** a category with a monthly budget is flagged when it is over, when 80% or
+  more is used, or (from the 7th) when this month's daily rate would pass it by month-end;
+  subcategories count toward their parent. They show on Expenses → Budget (current month) and
+  as one Overview insight. Code: `budgetAlerts` in `lib/domain/expenses/budgets.ts`,
+  `budget/BudgetAlertsCard.tsx`, `features/overview/budgetInsight.ts`.
 - **Receipt photos** (`photos/`): signed in, a photo is uploaded to the private `receipts`
   bucket as soon as it is picked (re-encoded in the browser first, which drops location data),
   and Save waits for it; it is shown through links that expire after a minute; unused files are
@@ -165,7 +170,7 @@ since uses them. Web only for now (phones need a file picker). Code:
   cash flow, budget use, recent activity.
 - **Net worth:** credit card accounts are left out; what is owed on them shows as an insight.
 - **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
-  card dues, savings rate, spending pace against the same days last month, the month-end
+  card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
   course, the category that rose most, how many months your cash covers, recurring entries due
   this week, the last salary and TDS this financial year, the largest expense. Nothing leaves
   the device for this. Code: `features/overview/insights.ts` (tested), `InsightsCard.tsx`.
