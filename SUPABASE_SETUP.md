@@ -26,6 +26,7 @@ This page lists what is set up on the Supabase side and how to manage it. Connec
 | `investment_goals`, fund expense ratio, SIP step-up | 0013                | Mutual funds → Insights (goals, costs) and SIP step-up     |
 | `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                          |
 | `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                     |
+| `employers`, `payslips`, `pf_entries`               | 0016                | Salary & PF (payslips across employers, the PF passbook)   |
 
 `internal` (allowlist, hook, helpers) is not exposed through the Data API, so none of it is
 reachable from the browser.
@@ -33,7 +34,7 @@ reachable from the browser.
 ## One-time setup checklist
 
 1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
-   `202610080004_foundation.sql` to `202610160015_note_reminders.sql` (SQL Editor → paste →
+   `202610080004_foundation.sql` to `202610170017_drop_unused_tables.sql` (SQL Editor → paste →
    Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
    function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
@@ -214,6 +215,31 @@ comment at the top of the file.
   `sync_ledger` saves them. Everything else is unchanged from 0013.
 - **Before this migration** the app hides reminders and Recently deleted while signed in, and
   deleting a note removes it at once (with Undo).
+
+## Salary and PF (migration 0016)
+
+Run `202610170016_salary_pf.sql` after 0015. Safe to run again; the rollback is in the comment at
+the top of the file. How it works: [`docs/features/README.md`](docs/features/README.md#salary-and-pf).
+
+- **Tables:** `employers` (name, joined and left dates; no ID numbers), `payslips` (one per
+  employer and month: earnings and other deductions as lines, employee EPF, VPF, TDS, the
+  employer's EPF and pension shares, the linked income entry) and `pf_entries` (the passbook:
+  contributions, yearly interest with the declared rate, withdrawals, opening balances). Same
+  rules as the ledger (own rows, two-step sign-in, checks, audit by column name).
+- **Rules the database keeps:** pay never goes below zero; one payslip per employer and month;
+  a contribution names its employer and wage month; interest has a rate; an employer with
+  payslips or PF entries cannot be deleted; deleting a payslip deletes its contribution;
+  deleting an income entry unlinks it from its payslip.
+- **Functions:** `load_ledger` returns `employers`, `payslips` and `pf_entries`; `sync_ledger`
+  saves and deletes them. Everything else is unchanged from 0015.
+- **Before this migration** the Salary & PF page says the database needs updating.
+
+## Removing unused tables (migration 0017)
+
+`202610170017_drop_unused_tables.sql` deletes `profiles` and `user_preferences`, which the
+original setup created for an earlier app (nothing reads them), with the trigger that filled them
+for each new account. It is permanent; the tables hold no financial data. On a project built from
+this folder they never existed and the file changes nothing.
 
 ## Bringing in existing funds and shares
 

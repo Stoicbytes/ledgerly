@@ -14,7 +14,7 @@ import {
 import { useTheme } from '@/theme';
 import { TextField } from '../components/TextField';
 import { LedgerRow } from '../components/LedgerRow';
-import { saveCsv } from '../export/saveCsv';
+import { saveTextFile } from '@/lib/files/saveTextFile';
 import { formatEntry } from '../format';
 import { useLedger } from '../hooks/useLedger';
 import { useSearchStore } from '../state/searchStore';
@@ -47,7 +47,7 @@ export function SearchSheet() {
     const rows = searching ? results : ledger.transactions;
     setExporting(true);
     try {
-      await saveCsv(transactionsCsv(rows, ledger), `expenses-${todayIso()}.csv`);
+      await saveTextFile(transactionsCsv(rows, ledger), `expenses-${todayIso()}.csv`);
       toast.show({ message: `Exported ${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` });
     } catch {
       toast.show({ message: 'Could not export. Try again.' });

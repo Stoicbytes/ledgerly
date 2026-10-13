@@ -1,13 +1,13 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { accounts, categories, transactions } from '@/lib/domain/expenses/__fixtures__/ledger';
 import { renderWithProviders } from '@/test/render';
-import { saveCsv } from '../../export/saveCsv';
+import { saveTextFile } from '@/lib/files/saveTextFile';
 import { useExpenseStore } from '../../state/expenseStore';
 import { useSearchStore } from '../../state/searchStore';
 import { periodRange } from '../SearchFilterChips';
 import { SearchSheet } from '../SearchSheet';
 
-jest.mock('../../export/saveCsv', () => ({ saveCsv: jest.fn(async () => undefined) }));
+jest.mock('@/lib/files/saveTextFile', () => ({ saveTextFile: jest.fn(async () => undefined) }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -38,14 +38,14 @@ describe('SearchSheet', () => {
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Export all' }));
     });
-    const [csv, name] = jest.mocked(saveCsv).mock.calls[0];
+    const [csv, name] = jest.mocked(saveTextFile).mock.calls[0];
     expect(csv.trim().split('\r\n')).toHaveLength(transactions.length + 1);
     expect(name).toMatch(/^expenses-\d{4}-\d{2}-\d{2}\.csv$/);
     await fireEvent.changeText(screen.getByLabelText('Search'), 'lunch');
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Export results' }));
     });
-    expect(jest.mocked(saveCsv).mock.calls[1][0].trim().split('\r\n')).toHaveLength(2);
+    expect(jest.mocked(saveTextFile).mock.calls[1][0].trim().split('\r\n')).toHaveLength(2);
     expect(screen.getByText('Exported 1 entry')).toBeTruthy();
   });
 

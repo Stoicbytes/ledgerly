@@ -1,15 +1,15 @@
-import type { Account, Category, Person, RecurringEntry, Transaction } from '@/lib/domain/expenses';
-import type { Goal, Portfolio } from '@/lib/domain/investments';
+import type { Account, Category, Person, Transaction } from '@/lib/domain/expenses';
+import type { Portfolio } from '@/lib/domain/investments';
 import type { Note } from '@/lib/domain/notes';
 import { diffById, isEmptyDiff } from '@/lib/domain/sync';
 import { accountRow, categoryRow, noteFromRemote, noteRow, personRow } from './ledgerRows';
 import { portfolioChanges, portfolioFromRemote, type RemotePortfolio } from './portfolioRows';
 import { receiptPhoto, receiptRow } from './receiptRows';
-import { extrasChanges, extrasFromRemote } from './extrasRows';
+import { extrasChanges, extrasFromRemote, type ExtraKey, type Extras } from './extrasRows';
 import { callRpc } from './rpc';
 
 /** Everything the app keeps in the cloud for one user. */
-export type CloudData = {
+export type CloudData = Extras & {
   accounts: Account[];
   categories: Category[];
   people: Person[];
@@ -17,17 +17,12 @@ export type CloudData = {
   notes: Note[];
   /** Mutual funds and stocks (migration 0007). */
   portfolio: Portfolio;
-  /** Recurring entries (migration 0012); undefined while the database does not have them. */
-  recurring?: RecurringEntry[];
-  /** Investment goals (migration 0013); undefined while the database does not have them. */
-  goals?: Goal[];
   /** Notes keep reminders and Recently deleted (migration 0015). */
   noteExtras?: boolean;
 };
 
 type InvestmentKey = 'mf_funds' | 'mf_sips' | 'mf_transactions' | 'stocks' | 'stock_trades';
 type LedgerKey = 'accounts' | 'categories' | 'people' | 'transactions' | 'notes';
-type ExtraKey = 'recurring' | 'goals';
 
 /** One batch for `sync_ledger`, in the database's column names. */
 export type LedgerChanges = Partial<Record<InvestmentKey | LedgerKey | ExtraKey, unknown[]>> & {

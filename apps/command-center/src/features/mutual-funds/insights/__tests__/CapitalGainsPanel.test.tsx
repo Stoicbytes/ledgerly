@@ -1,13 +1,13 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { saveCsv } from '@/features/expenses/export/saveCsv';
+import { saveTextFile } from '@/lib/files/saveTextFile';
 import { usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { buy, fund, sell } from '@/lib/domain/investments/__fixtures__';
 import { EMPTY_PORTFOLIO } from '@/lib/domain/investments';
 import { renderWithProviders } from '@/test/render';
 import { CapitalGainsPanel } from '../CapitalGainsPanel';
 
-jest.mock('@/features/expenses/export/saveCsv', () => ({
-  saveCsv: jest.fn(async () => undefined),
+jest.mock('@/lib/files/saveTextFile', () => ({
+  saveTextFile: jest.fn(async () => undefined),
 }));
 
 beforeEach(() => {
@@ -34,7 +34,7 @@ describe('CapitalGainsPanel', () => {
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Export FY 2025-26' }));
     });
-    const [csv, name] = jest.mocked(saveCsv).mock.calls[0];
+    const [csv, name] = jest.mocked(saveTextFile).mock.calls[0];
     expect(name).toBe('capital-gains-2025-26.csv');
     expect(csv).toContain(
       '2024-01-05,2025-08-01,574,100.0000,1000.00,1500.00,500.00,Equity · long term',

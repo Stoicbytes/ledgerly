@@ -26,6 +26,11 @@ export function NetWorthCard({ data }: { data: OverviewData }) {
           adjustsFontSizeToFit
         />
         <Delta value={data.savings} format="money" variant="pill" comparison="saved this month" />
+        {data.pf ? (
+          <Text variant="caption" color="textSecondary">
+            Includes PF {formatMoneyWhole(data.pf)}
+          </Text>
+        ) : null}
       </View>
       <View style={{ flexDirection: 'row', gap: theme.space[2] }}>
         <View style={{ flex: 1 }}>

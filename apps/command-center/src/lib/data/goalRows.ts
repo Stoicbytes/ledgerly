@@ -1,5 +1,4 @@
 import type { Goal } from '@/lib/domain/investments';
-import { diffById } from '@/lib/domain/sync';
 
 /** `investment_goals` (migration 0013) to and from the app. */
 type Row = Record<string, unknown>;
@@ -27,6 +26,3 @@ export const goalRow = (g: Goal) => ({
   expected_return: g.expectedReturn,
   created_at: new Date(g.createdAt || Date.now()).toISOString(),
 });
-
-export const goalChanges = (previous: Goal[] | undefined, next: Goal[] | undefined) =>
-  diffById(previous ?? [], next ?? [], goalRow);

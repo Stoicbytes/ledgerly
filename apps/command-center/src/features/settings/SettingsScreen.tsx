@@ -9,6 +9,7 @@ import { useTheme, type ColorRoles } from '@/theme';
 import { useSession } from '@/features/auth/sessionStore';
 import { AccountCard } from './AccountCard';
 import { DeviceSignInCard } from './DeviceSignInCard';
+import { ExportCard } from './ExportCard';
 import { ProfileCard } from './ProfileCard';
 import { SecurityCard } from './SecurityCard';
 
@@ -65,6 +66,7 @@ export function SettingsScreen() {
           {signedIn ? <ProfileCard index={2} /> : null}
           {signedIn ? <SecurityCard index={2} /> : null}
           {signedIn ? <DeviceSignInCard index={3} /> : null}
+          {signedIn ? <ExportCard index={4} /> : null}
         </BentoCell>
       </BentoRow>
     </Screen>

@@ -14,7 +14,9 @@ it is in [`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](d
 | Mutual funds                | **Done, saved** | AMFI search, purchases/SIPs/redemptions/dividends, SIP plans with due and missed instalments, FIFO cost, XIRR, allocation, growth, AMFI NAVs |
 | Stocks                      | **Done, saved** | Buys, sells, dividends, bonus, splits, FIFO P&L, XIRR, sectors, day change, end-of-day prices                                                |
 | Tradebook import            | **Done**        | Zerodha tradebooks (.xlsx/.csv) read on the device; you review each trade and approve before anything is saved                               |
-| Overview                    | Done            | Net worth includes funds and stocks                                                                                                          |
+| Overview                    | Done            | Net worth includes funds, stocks and PF                                                                                                      |
+| Salary & PF                 | **Done, saved** | Payslips per employer and month across job changes, FY totals and TDS; PF passbook, interest estimate, pension apart (migration 0016)        |
+| Export everything           | **Done**        | One JSON file with all your data (Settings)                                                                                                  |
 | Public portfolio            | **Built**       | The site's home page, edited in Dashboard → Portfolio and published as a snapshot; Dashboard button opens the app; needs migration 0010      |
 | Old app's data              | Retired         | Not imported (your decision) and deleted from the database. The ledger starts from scratch                                                   |
 | App-wide Reports, Insights  | Not built       | Hidden from the app until they work; fund insights are under Mutual funds                                                                    |
@@ -24,7 +26,7 @@ it is in [`ARCHITECTURE.md`](ARCHITECTURE.md); decisions are in [`decisions/`](d
 | Shares vs index             | **Done**        | Your shares against an index fund you choose (Nifty 50 to begin with), same money on the same dates (migration 0014)                         |
 
 > **October 2026:** the old Vite app and its data were retired. `supabase/migrations` holds
-> everything a new project needs (0004 foundation, then 0005–0015), and CI installs it on an
+> everything a new project needs (0004 foundation, then 0005–0017), and CI installs it on an
 > empty database on every change.
 
 ## The plan in one picture
@@ -122,27 +124,18 @@ Small, high-value engineering steps ([report](AUDIT_2026-10.md)):
 4. Route-level code splitting to bring the web bundle towards its 350 KiB target.
 5. Load history by period instead of all at once, when the ledger grows large.
 
-### PF / EPF tracker
+### PF / EPF and salary payslips (done)
 
-Your first personal tracker (chosen October 2026), after the import; it replaces the spreadsheet's
-PF sheet:
+Built October 2026 (migration 0016), independent of any one company: payslips name their
+employer, and the PF account follows you between jobs as under one UAN.
 
-- Monthly contributions: your share, VPF, and the employer's split between EPF and the pension
-  scheme (EPS), entered per month or carried over from the payslip.
-- Interest is added once a year at the rate EPFO declares for that year, which you enter with the
-  year it applies to (no rate built into the app). It counts only once credited, not before.
-- Withdrawals and advances; employer changes under one UAN; a passbook check against the figures
-  on your EPFO passbook.
-- Statutory figures (contribution rates, wage ceiling) are settings with the date they apply from,
-  not hidden constants. EPF counts in net worth.
-
-### Salary payslips (after PF)
-
-- The full payslip each month: earnings (basic, HRA, allowances, bonus), deductions (EPF, VPF,
-  professional tax, TDS and others), net pay and the employer's contributions.
-- Net pay records the salary income entry in one step; the EPF lines feed the PF tracker.
-- Totals by financial year: gross, deductions and tax deducted so far. Payslip files wait for
-  private storage.
+- Payslips with the lines as printed, EPF/VPF/TDS and the employer's shares; net pay can record the
+  income entry; totals by financial year and per employer.
+- The PF passbook: contributions from payslips (or by hand), yearly interest at the rate you enter
+  (with an EPFO-style estimate to check against), withdrawals, opening balances; pension apart;
+  PF in net worth.
+- Still to come: a reminder for months without a payslip, payslip PDFs in private storage, and
+  employer-wise transfer entries if an old PF account was never merged.
 
 ### The rest of the Excel tracker
 
@@ -227,7 +220,8 @@ quick add for anything.
 - **App lock** with Face ID / fingerprint on phones; **privacy mode** that hides amounts.
 - Installable web app; home-screen widgets on phones.
 - **Incremental sync** (changes since a cursor) and per-area loading when data grows; offline cache.
-- Backup and export (JSON and CSV), scheduled encrypted backups, account deletion.
+- ~~Export everything as JSON~~ (done). Next: scheduled encrypted backups, an import of that
+  file, account deletion.
 
 ### Hardening and performance
 

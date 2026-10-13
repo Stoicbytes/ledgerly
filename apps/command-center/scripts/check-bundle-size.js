@@ -17,7 +17,9 @@
  * expense and fund extras (recurring entries, search and CSV export, the amount
  * calculator, capital gains, goals, costs, SIP step-up) brought it to ~521 KiB, so the
  * ceiling is 540 KiB; Expo Router's async routes were tried and made the total larger
- * (shared code is duplicated per route), so splitting needs its own piece of work. Phase 11
+ * (shared code is duplicated per route), so splitting needs its own piece of work. Salary &
+ * PF (payslips across employers, the PF passbook with interest estimates) and the full JSON
+ * export added ~12.6 KiB: the bundle is ~540 KiB and the ceiling 560 KiB. Phase 11
  * target from the plan: ≤ 350 KiB (route-level code splitting). Raise the ceiling only
  * deliberately, in the same PR that explains why.
  */
@@ -25,7 +27,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const CEILING_KIB = 540;
+const CEILING_KIB = 560;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');
