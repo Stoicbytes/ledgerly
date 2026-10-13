@@ -123,6 +123,20 @@ export async function refreshCloudData(): Promise<void> {
   if (newHoldings) void useMarketStore.getState().load();
 }
 
+/**
+ * Loads everything again after the database itself changed the data (a reset in
+ * Settings), so the screens and the saved copy match it and nothing is sent back.
+ */
+export async function reloadCloudData(): Promise<void> {
+  const run = generation;
+  if (!baseline) return;
+  const data = await loadCloudData();
+  if (run !== generation) return;
+  baseline = data;
+  loadedAt = Date.now();
+  applyToStores(data);
+}
+
 /** Whether something the user changed has not reached the database yet. */
 export function hasUnsavedChanges(): boolean {
   if (!baseline) return false;

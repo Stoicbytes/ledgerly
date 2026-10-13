@@ -34,7 +34,7 @@ reachable from the browser.
 ## One-time setup checklist
 
 1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
-   `202610080004_foundation.sql` to `202610170017_drop_unused_tables.sql` (SQL Editor → paste →
+   `202610080004_foundation.sql` to `202610180018_reset_data.sql` (SQL Editor → paste →
    Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
    function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
@@ -240,6 +240,14 @@ the top of the file. How it works: [`docs/features/README.md`](docs/features/REA
 original setup created for an earlier app (nothing reads them), with the trigger that filled them
 for each new account. It is permanent; the tables hold no financial data. On a project built from
 this folder they never existed and the file changes nothing.
+
+## Reset options (migration 0018)
+
+`202610180018_reset_data.sql` adds `reset_data(scope)`, used by Settings → **Reset data** to clear
+expense entries (or everything in Expenses), mutual funds or stocks in one transaction. It runs as
+the signed-in user, so Row Level Security and the two-step sign-in still apply, and the audit log
+records each deleted row. Run it after 0017; safe to run again. Without it, the app says the reset
+needs this migration and deletes nothing.
 
 ## Bringing in existing funds and shares
 

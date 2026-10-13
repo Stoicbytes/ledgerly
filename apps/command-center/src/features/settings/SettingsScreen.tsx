@@ -11,6 +11,7 @@ import { AccountCard } from './AccountCard';
 import { DeviceSignInCard } from './DeviceSignInCard';
 import { ExportCard } from './ExportCard';
 import { SheetImportCard } from './import/SheetImportCard';
+import { ResetCard } from './reset/ResetCard';
 import { ProfileCard } from './ProfileCard';
 import { SecurityCard } from './SecurityCard';
 
@@ -69,6 +70,7 @@ export function SettingsScreen() {
           {signedIn ? <DeviceSignInCard index={3} /> : null}
           {signedIn ? <ExportCard index={4} /> : null}
           <SheetImportCard index={5} />
+          <ResetCard index={6} />
         </BentoCell>
       </BentoRow>
     </Screen>

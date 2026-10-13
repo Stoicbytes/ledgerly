@@ -103,6 +103,21 @@ funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfol
 Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
 `features/settings/exportAll.ts`, `ExportCard.tsx`.
 
+## Reset data
+
+Settings → **Reset data** clears one part of Ledgerly so it can start again: **expense entries**
+(entries and recurring entries; accounts, categories, budgets and people stay), **everything in
+Expenses** (also accounts, categories and people; the starter set can be added again), **mutual
+funds** (funds with their transactions and SIPs, and goals) or **stocks** (shares and their
+trades; the benchmark stays). Salary, PF, notes and the portfolio site are never touched.
+
+- **Safety:** the sheet says what will be deleted (with counts) and stays locked until RESET is
+  typed. Signed in, unsaved edits are sent first; if they cannot be (offline), nothing happens.
+- **How:** the database deletes the rows in one transaction (`reset_data`, migration 0018, so
+  large ledgers are cleared at once), then the app loads everything again. Preview mode clears
+  the sample data in memory. Not reversible: download **Export everything** first.
+- **Code:** `features/settings/reset/`, `lib/data/resetRepository.ts`.
+
 ## Import from another app
 
 Settings → **Import from another app** reads an .xlsx or .csv export from another expense app
