@@ -1,6 +1,7 @@
-import type { SheetRead } from './sheetImport';
-import type { RecurringEntry } from './recurring';
-import type { Account, AccountGroup, Category, CategoryKind, Transaction } from './types';
+import type { SheetRead, SheetRow } from './sheetImport';
+import { SKIP_REASONS } from './sheetImport';
+import { guessAccountGroup, guessCategoryIcon } from './sheetImportGuess';
+import type { Account, Category, CategoryKind, Transaction } from './types';
 
 /**
  * What importing a sheet would add: new accounts and categories (matched to yours by name,
@@ -20,6 +21,9 @@ export type SheetImportPlan = {
   expense: number;
   /** New entries beyond one import's limit: importing the same file again adds them. */
   remaining: number;
+  transfers: number;
+  /** Balance corrections added to new accounts' opening balances. */
+  corrections: { account: string; amount: number }[];
 };
 
 /**
@@ -47,41 +51,14 @@ const nextOrder = (items: { order: number }[]) =>
   items.reduce((max, item) => Math.max(max, item.order + 1), 0);
 const TINTS = 8;
 
-/** A new account's type from its name; anything unclear is a bank account. */
-export function guessAccountGroup(name: string): AccountGroup {
-  const lower = name.toLowerCase();
-  if (/cash/.test(lower)) return 'cash';
-  if (/card|credit/.test(lower)) return 'card';
-  if (/wallet|paytm|phonepe|gpay|amazon pay/.test(lower)) return 'wallet';
-  return 'bank';
-}
-
-const ICON_WORDS: [RegExp, string][] = [
-  [/food|tea|snack|restaurant|grocer/, 'food'],
-  [/transport|travel|cab|bus|train|petrol|fuel/, 'transport'],
-  [/rent|house|home/, 'home'],
-  [/social|friend|party/, 'social'],
-  [/sport|gym|fitness/, 'sports'],
-  [/hometown/, 'hometown'],
-  [/mobile|phone|recharge/, 'mobile'],
-  [/household/, 'household'],
-  [/groom|salon|beauty/, 'grooming'],
-  [/family|dad|mom|parent/, 'family'],
-  [/gadget|electronic/, 'gadgets'],
-  [/gift/, 'gift'],
-  [/shop/, 'shops'],
-  [/medic|pharma|doctor|health/, 'medicine'],
-  [/station/, 'stationery'],
-  [/salary|bonus/, 'salary'],
-  [/bill|card/, 'bills'],
-  [/saving|interest/, 'interest'],
-];
-
-export const guessCategoryIcon = (name: string) =>
-  ICON_WORDS.find(([pattern]) => pattern.test(name.toLowerCase()))?.[1] ?? 'other';
-
-const entryKey = (t: Pick<Transaction, 'date' | 'kind' | 'amount' | 'accountId' | 'note'>) =>
-  `${t.date}|${t.kind}|${t.amount}|${t.accountId}|${noteKey(t.note)}`;
+type EntryKeyPart = Pick<Transaction, 'date' | 'kind' | 'amount' | 'accountId' | 'note'> & {
+  toAccountId: string | null;
+};
+const entryKey = (t: EntryKeyPart) =>
+  `${t.date}|${t.kind}|${t.amount}|${t.accountId}|${t.toAccountId ?? ''}|${noteKey(t.note)}`;
+/** One transfer as both sides of a Money Manager export describe it. */
+const transferKey = (row: SheetRow) =>
+  `${row.date}|${row.amount}|${key(row.account)}|${key(row.toAccount)}`;
 
 export function planSheetImport(
   read: SheetRead,
@@ -95,11 +72,13 @@ export function planSheetImport(
     categories: [],
     transactions: [],
     duplicates: 0,
-    skipped: read.skipped,
+    skipped: [...read.skipped],
     range: null,
     income: 0,
     expense: 0,
     remaining: 0,
+    transfers: 0,
+    corrections: [],
   };
 
   const accountFor = (raw: string) => {
@@ -152,9 +131,38 @@ export function planSheetImport(
     existing.set(entryKey(item), (existing.get(entryKey(item)) ?? 0) + 1);
   }
 
+  // A Transfer-In row repeating a Transfer-Out row of the same transfer adds nothing.
+  const outs = new Map<string, number>();
+  for (const row of read.rows) {
+    if (row.kind === 'transfer' && row.side === 'out') {
+      outs.set(transferKey(row), (outs.get(transferKey(row)) ?? 0) + 1);
+    }
+  }
+  const startingAccounts = new Set(accounts.map((item) => item.id));
+  const corrected = new Map<string, number>();
+
   for (const row of [...read.rows].sort((a, b) => a.at - b.at)) {
+    if (row.kind === 'transfer' && row.side === 'in') {
+      const mirrors = outs.get(transferKey(row)) ?? 0;
+      if (mirrors > 0) {
+        outs.set(transferKey(row), mirrors - 1);
+        continue;
+      }
+    }
     const accountId = accountFor(row.account);
-    const match = entryKey({ ...row, accountId });
+    if (row.kind === 'balance') {
+      // Only an account this import creates: correcting an existing one twice on a second
+      // import would be wrong, and its balance is better set by hand.
+      if (startingAccounts.has(accountId)) {
+        plan.skipped.push({ line: row.line, reason: SKIP_REASONS.balance });
+      } else {
+        corrected.set(accountId, (corrected.get(accountId) ?? 0) + row.direction * row.amount);
+      }
+      continue;
+    }
+    const toAccountId = row.kind === 'transfer' ? accountFor(row.toAccount) : null;
+    const kind = row.kind;
+    const match = entryKey({ ...row, kind, accountId, toAccountId });
     const left = existing.get(match) ?? 0;
     if (left > 0) {
       existing.set(match, left - 1);
@@ -166,78 +174,41 @@ export function planSheetImport(
       continue;
     }
     // A name that is only emoji is no category: the entry stays, uncategorised or under the parent.
-    const parent = key(row.category) ? categoryFor(row.kind, row.category, null) : null;
+    const parent =
+      kind !== 'transfer' && key(row.category) ? categoryFor(kind, row.category, null) : null;
     const leaf =
-      parent && key(row.subcategory) ? categoryFor(row.kind, row.subcategory, parent) : parent;
+      parent && kind !== 'transfer' && key(row.subcategory)
+        ? categoryFor(kind, row.subcategory, parent)
+        : parent;
     plan.transactions.push({
       id: newId(),
-      kind: row.kind,
+      kind,
       date: row.date,
       amount: row.amount,
       accountId,
-      toAccountId: null,
+      toAccountId,
       fee: 0,
       categoryId: leaf?.id ?? null,
       note: row.note,
       createdAt: row.at,
     });
-    plan[row.kind] += row.amount;
+    if (kind === 'transfer') plan.transfers += 1;
+    else plan[kind] += row.amount;
   }
 
-  // Only accounts that new entries use (a file of duplicates adds nothing).
-  const used = new Set(plan.transactions.map((item) => item.accountId));
+  for (const account of plan.accounts) {
+    const amount = corrected.get(account.id);
+    if (amount === undefined) continue;
+    account.openingBalance = amount;
+    plan.corrections.push({ account: account.name, amount });
+  }
+  // Only accounts that new entries or corrections use (a file of duplicates adds nothing).
+  const used = new Set([
+    ...plan.transactions.flatMap((item) => [item.accountId, item.toAccountId ?? '']),
+    ...corrected.keys(),
+  ]);
   plan.accounts = plan.accounts.filter((item) => used.has(item.id));
   const dates = plan.transactions.map((item) => item.date).sort();
   if (dates.length) plan.range = { start: dates[0], end: dates[dates.length - 1] };
   return plan;
-}
-
-/** The ledger with an approved plan's accounts, categories and entries added. */
-export const withImported = <T extends Ledger>(ledger: T, items: Ledger): T => ({
-  ...ledger,
-  accounts: [...ledger.accounts, ...items.accounts],
-  categories: [...ledger.categories, ...items.categories],
-  transactions: [...ledger.transactions, ...items.transactions],
-});
-
-/**
- * Takes an import back: its entries go, and the accounts and categories it created go
- * too unless something added since still uses them. Repayments keep no link to removed
- * entries.
- */
-export function withoutImported<T extends Ledger>(
-  ledger: T,
-  imported: Ledger,
-  rules: readonly RecurringEntry[],
-): T {
-  const gone = new Set(imported.transactions.map((item) => item.id));
-  const transactions = ledger.transactions
-    .filter((item) => !gone.has(item.id))
-    .map((item) =>
-      item.settles?.some((id) => gone.has(id))
-        ? { ...item, settles: item.settles.filter((id) => !gone.has(id)) }
-        : item,
-    );
-  const usedCategories = new Set<string | null>([
-    ...transactions.map((item) => item.categoryId),
-    ...rules.map((rule) => rule.categoryId),
-  ]);
-  const usedAccounts = new Set<string | null>(
-    [...transactions, ...rules].flatMap((item) => [item.accountId, item.toAccountId]),
-  );
-  const newCategories = new Set(imported.categories.map((item) => item.id));
-  // A created category stays when it, or a subcategory under it that stays, is in use.
-  const keepCategory = (id: string): boolean =>
-    !newCategories.has(id) ||
-    usedCategories.has(id) ||
-    ledger.categories.some((item) => item.parentId === id && keepCategory(item.id));
-  const newAccounts = new Set(imported.accounts.map((item) => item.id));
-  return {
-    ...ledger,
-    transactions,
-    categories: ledger.categories.filter((item) => keepCategory(item.id)),
-    accounts: ledger.accounts.filter(
-      (item) => !newAccounts.has(item.id) || usedAccounts.has(item.id),
-    ),
-  };
 }

@@ -23,9 +23,18 @@ export function reviewLines(plan: SheetImportPlan): string[] {
       `${count(plan.transactions.length, 'entry', 'entries')} from ${date(plan.range.start)} to ${date(plan.range.end)}: ${money(plan.expense)} spent, ${money(plan.income)} income.`,
     );
   }
+  if (plan.transfers) {
+    lines.push(
+      `${count(plan.transfers, 'transfer')} between accounts (not counted as spending or income).`,
+    );
+  }
+  if (plan.corrections.length) {
+    const parts = plan.corrections.map((item) => `${item.account} ${money(item.amount)}`);
+    lines.push(`Opening balances from balance corrections: ${parts.join(', ')}.`);
+  }
   if (plan.accounts.length) {
     const names = plan.accounts.map((a) => `${a.name} (${ACCOUNT_TYPE_LABELS[a.group]})`);
-    lines.push(`New accounts, starting at ₹0: ${names.join(', ')}.`);
+    lines.push(`New accounts: ${names.join(', ')}.`);
   }
   const top = plan.categories.filter((item) => item.parentId === null);
   if (plan.categories.length) {
