@@ -1,5 +1,6 @@
 import {
   addDays,
+  budgetAlerts,
   addMonths,
   categoryBreakdown,
   comparisonRange,
@@ -18,6 +19,7 @@ import {
 } from '@/lib/domain/expenses';
 import { netPay, payslipYear, type Payslip } from '@/lib/domain/salary';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
+import { budgetInsight } from './budgetInsight';
 
 /** One line on the home screen: what stands out, worked out from your own entries. */
 export type Insight = {
@@ -59,6 +61,8 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
   const now = periodTotals(transactions, range);
   const before = periodTotals(transactions, base);
   const items: Insight[] = [];
+  const budget = budgetInsight(budgetAlerts(categories, transactions, today));
+  if (budget) items.push(budget);
 
   const due = cardDue(accounts, balances);
   if (due > 0) {
