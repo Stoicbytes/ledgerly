@@ -103,6 +103,25 @@ funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfol
 Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
 `features/settings/exportAll.ts`, `ExportCard.tsx`.
 
+## Import from another app
+
+Settings → **Import from another app** reads an .xlsx or .csv export from another expense app
+(the Money Manager layout: Period, Accounts, Category, Subcategory, Note, Description, Amount,
+Income/Expense) on the device; the file is not uploaded or kept. A review lists what would be
+added before anything is saved:
+
+- **Entries:** expenses and income, with the time of day kept for ordering. Note and Description
+  are joined (120 characters at most).
+- **Accounts and categories:** matched to yours by name (ignoring case and spaces); missing ones
+  are created. New accounts start at a ₹0 opening balance: set it in Accounts so balances match.
+- **Left out, with the reason:** balance corrections, transfers and zero amounts.
+- **Already there:** entries with the same day, type, amount, account and note are skipped, so
+  importing the same file twice adds nothing.
+
+**Undo import** takes the whole import back while the card is open. Web only for now (phones
+need a file picker). Code: `lib/domain/expenses/sheetImport.ts`, `sheetImportPlan.ts` (tested),
+`features/settings/import/`.
+
 ## Mutual funds, stocks and tradebook import
 
 - **Purpose:** real returns on investments (FIFO gains, XIRR), SIP tracking, net worth.
@@ -136,5 +155,5 @@ Amounts are in paise. Receipt photos stay in storage; each entry keeps its path.
 
 ## Not built (hidden)
 
-Reports, Goals, Insights, search and data export are not in the app (their "Planned"
+App-wide Reports and search across every module are not in the app (their "Planned"
 placeholders were removed in October 2026). See [`../PRODUCT.md`](../PRODUCT.md).

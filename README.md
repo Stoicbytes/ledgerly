@@ -14,7 +14,7 @@ Supabase provides authentication, the database and storage. Amounts are in India
 | Expenses       | Calendar, daily and monthly views; accounts, categories, budgets; split expenses and repayments; recurring entries; receipts; search with CSV export; sums in amounts |
 | Mutual funds   | AMFI scheme search and daily NAVs; purchases, SIPs and redemptions; FIFO cost, XIRR, allocation; capital gains by financial year; goals, costs and SIP step-up        |
 | Stocks         | Buys, sales, dividends, bonus issues and splits; FIFO profit and loss; end-of-day NSE/BSE prices; sectors and movers; comparison with an index fund                   |
-| Import         | Zerodha tradebooks for funds and shares, read on the device; every trade is reviewed (possible duplicates unticked) before anything is saved                          |
+| Import         | Zerodha tradebooks for funds and shares, and other expense apps' exports; read on the device and reviewed before anything is saved                                    |
 | Salary & PF    | Payslips per employer and month across job changes, yearly totals and TDS; the PF passbook with interest estimates, pension apart                                     |
 | Overview       | Net worth across accounts (credit cards left out), funds, shares and PF; insights from your entries                                                                   |
 | Notes          | Text notes and checklists with colours, pins, labels, reminders, archive, search and Recently deleted                                                                 |

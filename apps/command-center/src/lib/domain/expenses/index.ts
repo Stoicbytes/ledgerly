@@ -13,3 +13,5 @@ export * from './people';
 export * from './photos';
 export * from './recurring';
 export * from './search';
+export * from './sheetImport';
+export * from './sheetImportPlan';

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import type {
-  Account,
-  AccountGroup,
-  Category,
-  CategoryKind,
-  Person,
-  Transaction,
-  ValidTransaction,
+import {
+  withImported,
+  type Account,
+  type AccountGroup,
+  type Category,
+  type CategoryKind,
+  type Person,
+  type Transaction,
+  type ValidTransaction,
 } from '@/lib/domain/expenses';
 import { newId } from '@/lib/ids';
 import { useRecurringStore } from './recurringStore';
@@ -52,6 +53,8 @@ type ExpenseStore = Ledger & {
   saveAccount: (input: AccountInput, id?: string | null) => Account;
   /** Only unused accounts can be deleted; returns false otherwise. */
   deleteAccount: (id: string) => boolean;
+  /** Adds imported accounts, categories and entries; returns the previous ledger for undo. */
+  addImported: (items: Omit<Ledger, 'people'>) => Ledger;
   restoreLedger: (ledger: Ledger) => void;
   resetPreview: () => void;
 };
@@ -212,6 +215,12 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     if (used) return false;
     set((state) => ({ accounts: state.accounts.filter((item) => item.id !== id) }));
     return true;
+  },
+
+  addImported: (items) => {
+    const previous = getLedger();
+    set(withImported(previous, items));
+    return previous;
   },
 
   restoreLedger: (ledger) => set(ledger),
