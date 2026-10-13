@@ -12,6 +12,7 @@ import { ItemList } from './components/ItemList';
 import { MessagesPanel } from './components/MessagesPanel';
 import { ProfilePanel } from './components/ProfilePanel';
 import { PublishBar } from './components/PublishBar';
+import { CvPanel } from './cv/CvPanel';
 import { SkillsPanel } from './components/SkillsPanel';
 import { useSiteStore } from './state/siteStore';
 
@@ -22,6 +23,7 @@ const TABS = [
   ['experience', 'Experience'],
   ['credentials', 'Education'],
   ['more', 'More'],
+  ['cv', 'CV'],
   ['messages', 'Messages'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -82,6 +84,8 @@ function Panel({ tab }: { tab: Tab }) {
           />
         </View>
       );
+    case 'cv':
+      return <CvPanel />;
     case 'messages':
       return <MessagesPanel />;
   }
