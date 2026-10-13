@@ -6,6 +6,7 @@ import { PLAN_LABEL } from '@/features/preview/notice';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { layout, useTheme } from '@/theme';
 import { BrandMark } from './BrandMark';
+import { SearchButton } from './SearchButton';
 import { TopNav } from './TopNav';
 
 /** Floating header for tablet and desktop: brand, primary nav, actions, profile. */
@@ -44,6 +45,7 @@ export function DesktopHeader() {
           gap: theme.space[2],
         }}
       >
+        <SearchButton />
         {isDesktop ? (
           <View
             style={[
