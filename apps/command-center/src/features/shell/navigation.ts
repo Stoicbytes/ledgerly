@@ -1,5 +1,6 @@
 import {
   Briefcase,
+  ChartLine,
   ChartCandlestick,
   ChartPie,
   Landmark,
@@ -55,6 +56,13 @@ export const destinations: readonly Destination[] = [
     label: 'Stocks',
     icon: ChartCandlestick,
     placement: { desktop: 'top', mobile: 'tab' },
+  },
+  {
+    name: 'reports',
+    href: '/dashboard/reports',
+    label: 'Reports',
+    icon: ChartLine,
+    placement: { desktop: 'rail', mobile: 'more' },
   },
   {
     name: 'salary',

@@ -199,7 +199,15 @@ since uses them. Web only for now (phones need a file picker). Code:
   `apps/command-center/api/site.mjs` (serves the site at `/`).
 - **Guide:** [`PORTFOLIO.md`](PORTFOLIO.md).
 
-## Not built (hidden)
+## Reports
 
-App-wide Reports are not in the app (their "Planned"
-placeholders were removed in October 2026). See [`../PRODUCT.md`](../PRODUCT.md).
+- **Purpose:** one period's money in one place: income, spending (by category, with the change
+  on the period before), savings rate, investments bought and sold, dividends, salary and the PF
+  account, for a month, a calendar year or a financial year (April–March). A period still under
+  way is compared with the same number of days of the one before.
+- **Access:** Reports (desktop rail; **More** on phones). **Download PDF** saves it (web; phones
+  later, with a share sheet).
+- **Code:** `lib/domain/reports/` (period, report, PDF; tested), `features/reports/`. The PDF
+  writer is shared with the CV (`lib/files/pdf/`).
+- **Data:** none of its own; reads the expense, portfolio and salary stores. Nothing leaves the
+  device to build it.
