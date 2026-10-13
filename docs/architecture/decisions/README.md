@@ -17,6 +17,7 @@ stays, marked "Superseded by …").
 | [0009](0009-tradebook-import-on-device.md)         | Tradebooks read on the device, reviewed and approved before anything is saved         | Accepted                  |
 | [0010](0010-public-portfolio-site.md)              | A separate public portfolio site, edited in the dashboard and published as a snapshot | Partly superseded by 0011 |
 | [0011](0011-portfolio-at-the-dashboard-address.md) | The portfolio is the home page of the dashboard's address, with a Dashboard button    | Accepted                  |
+| [0012](0012-web-loads-screens-on-demand.md)        | The web app loads screens on demand and ships subset fonts                            | Accepted                  |
 
 ## Template
 
