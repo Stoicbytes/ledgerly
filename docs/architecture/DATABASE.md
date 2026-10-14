@@ -62,13 +62,13 @@ Checks run on every write, whatever the app sends:
 
 ## Functions
 
-| Function                                                                                                                      | Runs as           | Used by                                             |
-| ----------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------- |
-| `load_ledger()`, `sync_ledger(jsonb)`                                                                                         | The user (RLS)    | Dashboard sync                                      |
-| `load_market()`, `search_funds`, `search_securities`, `nav_on`, `load_stock_benchmark()`, `set_stock_benchmark(int)`          | The user (RLS)    | Funds and Stocks pages                              |
-| `market_*` (ingest, run start/finish, held schemes, status)                                                                   | Service role only | `market-refresh` Edge Function                      |
-| `portfolio_load`, `_save`, `_delete`, `_reorder`, `_mark_message`, `_media_paths`, `_publish`, `_unpublish`, `_preview_token` | The user (RLS)    | Dashboard → Portfolio                               |
-| `portfolio_public`, `portfolio_preview`, `portfolio_contact`                                                                  | Definer (narrow)  | The public site; the only functions `anon` may call |
+| Function                                                                                                                                 | Runs as           | Used by                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------- |
+| `load_ledger()`, `sync_ledger(jsonb)`, `sync_ledger_v2(jsonb)` (0020: skips and reports rows changed or deleted since `base_updated_at`) | The user (RLS)    | Dashboard sync                                      |
+| `load_market()`, `search_funds`, `search_securities`, `nav_on`, `load_stock_benchmark()`, `set_stock_benchmark(int)`                     | The user (RLS)    | Funds and Stocks pages                              |
+| `market_*` (ingest, run start/finish, held schemes, status)                                                                              | Service role only | `market-refresh` Edge Function                      |
+| `portfolio_load`, `_save`, `_delete`, `_reorder`, `_mark_message`, `_media_paths`, `_publish`, `_unpublish`, `_preview_token`            | The user (RLS)    | Dashboard → Portfolio                               |
+| `portfolio_public`, `portfolio_preview`, `portfolio_contact`                                                                             | Definer (narrow)  | The public site; the only functions `anon` may call |
 
 All functions set an empty `search_path` and name every object with its schema.
 
@@ -99,9 +99,12 @@ small scan.
 - Contact-form rate-limit hashes are deleted after a day; preview links expire after 20 minutes;
   contact messages stay until the owner deletes them.
 - Price history is kept only for schemes and shares someone holds.
-- Account deletion and data export are not built yet. Today a full deletion is done by the
-  project owner in the Supabase dashboard (database rows and the `receipts` and
-  `portfolio-media` files).
+- Account deletion is not built yet. Today a full deletion is done by the project owner in the
+  Supabase dashboard (database rows and the `receipts` and `portfolio-media` files).
+- Data export and restore: Settings → **Export everything** (one JSON file) and **Restore from
+  backup** (adds a file's missing records through `sync_ledger`; never deletes). Database-level
+  backups: the daily encrypted `pg_dump` in `.github/workflows/db-backup.yml` (see
+  SUPABASE_SETUP.md → Backups and restore), or Supabase's own backups on paid plans.
 - Receipt files no entry uses are deleted by the app at a later sign-in once they are a day old.
 - `portfolio-media` is a public bucket: a file's address works for anyone who has it, including
   images of draft (hidden) items and items not yet published. Deleting an item does not delete

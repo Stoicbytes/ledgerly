@@ -2,12 +2,12 @@ import { View } from 'react-native';
 import { Inbox, RotateCcw } from '@/components/icons';
 import { Button, Card, CardHeader, CategoryIcon, Text } from '@/components/ui';
 import { canPickFiles } from '@/features/investments/import/pickFiles';
-import { isCloudActive, useSyncStatus } from '@/features/sync/syncStatus';
+import { useSyncStatus } from '@/features/sync/syncStatus';
 import { ACCOUNT_TYPE_LABELS, parseIsoDate } from '@/lib/domain/expenses';
 import type { SheetImportPlan } from '@/lib/domain/expenses/sheetImports';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
-import { useSheetImport } from './useSheetImport';
+import { useSheetImport, type ImportSave } from './useSheetImport';
 
 const date = (iso: string) =>
   new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(
@@ -60,11 +60,29 @@ export function reviewLines(plan: SheetImportPlan): string[] {
   return lines;
 }
 
+/** Where the imported entries stand: saved, still on the way, or not saved. */
+export function saveLine(save: ImportSave, entries: number): string {
+  switch (save.state) {
+    case 'preview':
+      return 'Preview: nothing is saved.';
+    case 'saving':
+      return 'Saving…';
+    case 'saved':
+      return 'Saved.';
+    case 'notSaved':
+      return save.refused
+        ? `Not saved: ${count(save.refused, 'entry', 'entries')} could not be saved and ${save.refused === 1 ? 'was' : 'were'} taken out again.`
+        : `Not saved yet: ${count(entries, 'entry', 'entries')} wait on this device and are sent when the connection is back.`;
+  }
+}
+
 /** Brings in entries exported from another expense app (Money Manager and similar). */
 export function SheetImportCard({ index }: { index: number }) {
   const theme = useTheme();
-  const { state, choose, approve, undo, reset } = useSheetImport();
-  const saved = isCloudActive(useSyncStatus((sync) => sync.status));
+  const status = useSyncStatus((sync) => sync.status);
+  const ready = status === 'saved' || status === 'saving' || status === 'retrying';
+  const { state, choose, approve, undo, reset, last, undoLast, dismissLast, notice } =
+    useSheetImport(ready);
   return (
     <Card index={index} style={{ gap: theme.space[4] }}>
       <CardHeader
@@ -84,7 +102,7 @@ export function SheetImportCard({ index }: { index: number }) {
             {state.plan.transactions.length ? (
               <Button
                 label={`Import ${count(state.plan.transactions.length, 'entry', 'entries')}`}
-                onPress={approve}
+                onPress={() => void approve()}
               />
             ) : null}
             <Button label="Cancel" variant="secondary" onPress={reset} />
@@ -93,7 +111,14 @@ export function SheetImportCard({ index }: { index: number }) {
       ) : state.phase === 'done' ? (
         <View style={{ gap: theme.space[3] }}>
           <Text variant="caption" color="textSecondary">
-            {`Imported ${count(state.imported.transactions.length, 'entry', 'entries')}. Set each new account's opening balance in Accounts so its balance matches your bank.${state.imported.remaining ? ' Import the same file again for the rest.' : ''}${saved ? '' : ' Preview: nothing is saved.'}`}
+            {`Imported ${count(state.imported.transactions.length, 'entry', 'entries')}. Set each new account's opening balance in Accounts so its balance matches your bank.${state.imported.remaining ? ' Import the same file again for the rest.' : ''}`}
+          </Text>
+          <Text
+            variant="caption"
+            color={state.save.state === 'notSaved' ? 'warning' : 'textSecondary'}
+            accessibilityLiveRegion="polite"
+          >
+            {saveLine(state.save, state.imported.transactions.length)}
           </Text>
           <View style={{ flexDirection: 'row', gap: theme.space[3], flexWrap: 'wrap' }}>
             <Button label="Done" variant="secondary" onPress={reset} />
@@ -113,6 +138,27 @@ export function SheetImportCard({ index }: { index: number }) {
             <Text variant="caption" color="danger">
               {state.problem}
             </Text>
+          ) : null}
+          {notice ? (
+            <Text variant="caption" color="textSecondary">
+              {notice}
+            </Text>
+          ) : null}
+          {last && ready ? (
+            <View style={{ gap: theme.space[2] }}>
+              <Text variant="caption" color="textSecondary">
+                {`Your last import (${count(last.transactions.length, 'entry', 'entries')}, ${date(last.at.slice(0, 10))}) can still be undone.`}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: theme.space[3], flexWrap: 'wrap' }}>
+                <Button
+                  label="Undo last import"
+                  icon={RotateCcw}
+                  variant="secondary"
+                  onPress={undoLast}
+                />
+                <Button label="Dismiss" variant="secondary" onPress={dismissLast} />
+              </View>
+            </View>
           ) : null}
         </View>
       ) : (

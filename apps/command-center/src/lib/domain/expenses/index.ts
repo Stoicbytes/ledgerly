@@ -17,3 +17,4 @@ export * from './photos';
 export * from './recurring';
 export * from './search';
 export * from './sheetImportUndo';
+export * from './categoryUndo';

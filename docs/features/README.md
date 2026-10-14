@@ -3,8 +3,12 @@
 One section per feature: what it is for, where it lives in the code, what it reads and writes,
 and what to watch out for. Paths are under `apps/command-center/src/` unless noted. Every
 feature that saves data does so through the same sync (`features/sync/cloudSync.ts` →
-`load_ledger` / `sync_ledger`; changes from another device are picked up when you come back to
-the app), except the Portfolio editor, which saves item by item. The
+`load_ledger` / `sync_ledger_v2`; changes from another device are picked up when you come back
+to the app, focus the window, or every 5 minutes), except the Portfolio editor, which saves item
+by item. The sync never silently loses an edit: unsaved changes are kept in the browser and saved
+at the same user's next sign-in; idle sign-out waits until everything is saved; a refused row is
+left out on its own (the rest is saved) with a note that stays until dismissed; a row changed
+or deleted on another device is not overwritten (migration 0020), and the newer version is shown. The
 Supabase calls are listed in [`../architecture/DATA_ACCESS.md`](../architecture/DATA_ACCESS.md),
 and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_CASES.md).
 
@@ -127,8 +131,39 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 Settings → **Export everything** saves one JSON file (`ledgerly-export-<date>.json`) with all your
 data: accounts, categories, people, entries, recurring entries, notes (Recently deleted too),
 funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfolio site's content.
-Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. Code:
+Amounts are in paise. Receipt photos stay in storage; each entry keeps its path. The file says
+`"format": "ledgerly-export"` and `"version": 1`; Restore from backup reads that version. Code:
 `features/settings/exportAll.ts`, `ExportCard.tsx`.
+
+## Restore from backup
+
+Settings → **Restore from backup** reads an Export everything file on the device (web; the file
+is not uploaded or kept) and adds back what is missing. It never deletes or overwrites.
+
+- **Checks first:** files over 20 MB, other formats and newer versions are refused. Every field
+  is checked for type and the database's limits (text lengths, amounts, dates, ids), keys such
+  as `__proto__` are refused anywhere in the file, ids must be unique and every reference
+  (account, category, person, fund, share, employer, payslip) must be in the file. One problem
+  refuses the whole file, with where it is.
+- **Review:** per kind, how many are in the file, to add, already here, matched by name, and
+  differing here; the date range of the entries; what happens to the portfolio site.
+- **Adding:** ids are kept, so restoring the same file twice adds nothing. A record whose id is
+  already here is kept as it is here (reported when it differs). An account, person, category
+  or share whose name is already taken uses the one here, and the restored entries point to it.
+  A payslip for a month that is already here under another id is left out (with its PF entry).
+  Records go through the normal save (`sync_ledger`) in batches of at most 4,000 rows per list,
+  things before their users, then everything is loaded again. If a batch fails, what was saved
+  stays and restoring the same file again adds the rest.
+- **Portfolio site:** restored only when your portfolio is empty, item by item through its
+  editor's save and checks; otherwise skipped. Messages and the published copy are not restored
+  (publish again).
+- **Not in backups:** receipt photos and portfolio images and files; restored entries come back
+  without them.
+- **Undo restore** (while the card is open) removes exactly what was added, keeping anything
+  used since (an account a new entry uses stays). The portfolio profile stays.
+- Preview mode restores into the sample data on screen only.
+- **Code:** `lib/domain/backup/` (checks, plan, undo; tested), `lib/data/restoreBatches.ts`,
+  `features/settings/restore/`.
 
 ## Reset data
 
@@ -142,7 +177,8 @@ trades; the benchmark stays). Salary, PF, notes and the portfolio site are never
   typed. Signed in, unsaved edits are sent first; if they cannot be (offline), nothing happens.
 - **How:** the database deletes the rows in one transaction (`reset_data`, migration 0018, so
   large ledgers are cleared at once), then the app loads everything again. Preview mode clears
-  the sample data in memory. Not reversible: download **Export everything** first.
+  the sample data in memory. Not reversible here: download **Export everything** first;
+  **Restore from backup** can add the records back (not receipt photos).
 - **Code:** `features/settings/reset/`, `lib/data/resetRepository.ts`.
 
 ## Import from another app
@@ -184,9 +220,10 @@ added before anything is saved:
   file cannot freeze the tab.
 
 **Import** plans again against the ledger as it is at that moment, so a double press or edits
-made meanwhile add no duplicates. **Undo import** (while the card is open) removes exactly the
-imported entries, and the accounts and categories the import created unless something added
-since uses them. Web only for now (phones need a file picker). Code:
+made meanwhile add no duplicates. **Undo import** removes exactly the imported entries, and the
+accounts and categories the import created unless something added since uses them; entries
+already deleted are skipped. Signed in, the last import's ids (only ids) are kept on the device
+per user, so **Undo last import** is still offered after a reload until it is used or dismissed. Web only for now (phones need a file picker). Code:
 `lib/domain/expenses/sheetImport.ts`, `sheetDates.ts`, `sheetImportPlan.ts` (tested),
 `features/settings/import/`.
 

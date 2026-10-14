@@ -1,0 +1,85 @@
+name: Database backup
+
+# Daily encrypted dump of the Supabase database, kept as a workflow artifact for 30 days.
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     the "Session pooler" connection string (Supabase → Connect), with
+#                       the database password filled in. GitHub runners have no IPv6, so
+#                       the direct db.<ref>.supabase.co address does not work here.
+#   BACKUP_PASSPHRASE   a long random passphrase, also kept somewhere outside GitHub
+#                       (without it the backups cannot be opened).
+# Without them the job only prints a notice and succeeds. The dump goes straight from
+# pg_dump into gpg: no unencrypted copy is written anywhere. Restore steps: SUPABASE_SETUP.md
+# ("Backups and restore").
+
+on:
+  schedule:
+    - cron: '17 21 * * *' # 21:17 UTC = 02:47 IST, daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump, encrypt, upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      # pg_dump must be the server's major version or newer (Supabase runs 15 or 17).
+      PG_IMAGE: postgres:17
+    steps:
+      - name: Check the secrets are set
+        id: secrets
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::notice title=Database backup skipped::Set the SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets to turn on daily backups (docs/GO_LIVE.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dump and encrypt
+        if: steps.secrets.outputs.ready == 'true'
+        id: dump
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y-%m-%dT%H%MZ)"
+          mkdir -p backup
+          umask 077
+          docker pull --quiet "$PG_IMAGE" > /dev/null
+          # App schemas (public and internal): schema and data, custom format.
+          docker run --rm -e SUPABASE_DB_URL "$PG_IMAGE" sh -c \
+            'pg_dump --dbname="$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges --schema=public --schema=internal' \
+            | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 --output "backup/ledgerly-app-$stamp.dump.gpg" \
+                3<<< "$BACKUP_PASSPHRASE"
+          # Sign-in accounts (auth.users and auth.identities), data only: every row in the app
+          # schemas belongs to a user id, so restoring into a new project needs these first.
+          # MFA factors and sessions are left out (two-step sign-in is set up again).
+          docker run --rm -e SUPABASE_DB_URL "$PG_IMAGE" sh -c \
+            'pg_dump --dbname="$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges --data-only --table=auth.users --table=auth.identities' \
+            | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 --output "backup/ledgerly-auth-$stamp.dump.gpg" \
+                3<<< "$BACKUP_PASSPHRASE"
+          for file in backup/*.gpg; do
+            # An encrypted empty dump is still ~100 bytes; a real one is far larger.
+            size="$(stat -c %s "$file")"
+            if [ "$size" -lt 1024 ]; then echo "::error::$file is only $size bytes"; exit 1; fi
+            echo "$(basename "$file"): $size bytes (encrypted)"
+          done
+          echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the encrypted dumps
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ledgerly-db-${{ steps.dump.outputs.stamp }}
+          path: backup/*.gpg
+          retention-days: 30
+          if-no-files-found: error

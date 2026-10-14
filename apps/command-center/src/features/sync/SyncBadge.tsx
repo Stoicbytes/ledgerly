@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Cloud, CloudOff } from '@/components/icons';
 import { Text } from '@/components/ui';
@@ -11,22 +10,19 @@ const labels: Record<Exclude<SyncStatus, 'off'>, string> = {
   saved: 'Saved',
   saving: 'Saving…',
   retrying: 'Offline · will retry',
+  expired: 'Signed out — sign in again to save',
 };
 
-/** Save state of the signed-in user's data (replaces the preview badge). */
+/**
+ * Save state of the signed-in user's data (replaces the preview badge). Refused changes
+ * and conflicts are explained by SyncNotices, which stay until dismissed.
+ */
 export function SyncBadge() {
   const theme = useTheme();
   const status = useSyncStatus((state) => state.status);
-  const rejected = useSyncStatus((state) => state.rejected);
-  const setRejected = useSyncStatus((state) => state.setRejected);
-  useEffect(() => {
-    if (!rejected) return undefined;
-    const timer = setTimeout(() => setRejected(false), 6000);
-    return () => clearTimeout(timer);
-  }, [rejected, setRejected]);
   if (status === 'off') return null;
-  const problem = rejected || status === 'retrying' || status === 'loadFailed';
-  const label = rejected ? 'A change could not be saved and was undone' : labels[status];
+  const problem = status === 'retrying' || status === 'loadFailed' || status === 'expired';
+  const label = labels[status];
   const Icon = problem ? CloudOff : Cloud;
   return (
     <View

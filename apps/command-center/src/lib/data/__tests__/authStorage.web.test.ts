@@ -63,4 +63,25 @@ describe('web authStorage', () => {
     authStorage.removeItem('sb-abc-auth-token');
     expect(authStorage.getItem('sb-abc-auth-token')).toBeNull();
   });
+
+  it('keeps the reset link’s code verifier where a new tab can read it, then removes it', () => {
+    const key = 'sb-abc-auth-token-code-verifier';
+    authStorage.setItem(key, 'verifier');
+    expect(local.getItem(key)).toBe('verifier');
+    expect(session.getItem(key)).toBeNull();
+    // The email link opens a new tab: empty sessionStorage, same localStorage.
+    for (const k of [...Array(session.length).keys()].map((i) => session.key(i)!)) {
+      session.removeItem(k);
+    }
+    expect(authStorage.getItem(key)).toBe('verifier');
+    authStorage.removeItem(key);
+    expect(authStorage.getItem(key)).toBeNull();
+  });
+
+  it('never moves the code verifier into the tab when keep-signed-in is unticked', () => {
+    setKeptSignedIn(true);
+    authStorage.setItem('sb-abc-auth-token-code-verifier', 'verifier');
+    setKeptSignedIn(false);
+    expect(local.getItem('sb-abc-auth-token-code-verifier')).toBe('verifier');
+  });
 });

@@ -1,7 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { pickFiles } from '@/features/investments/import/pickFiles';
+import { flushCloudSync } from '@/features/sync/cloudSync';
+import { isCloudActive, useSyncStatus } from '@/features/sync/syncStatus';
 import { withoutImported } from '@/lib/domain/expenses';
 import {
   planSheetImport,
@@ -10,12 +12,29 @@ import {
   type SheetRead,
 } from '@/lib/domain/expenses/sheetImports';
 import { newId } from '@/lib/ids';
+import {
+  clearLastImport,
+  lastImportKey,
+  lastImportOf,
+  readLastImport,
+  saveLastImport,
+  undoLastImport,
+  type LastImport,
+} from './lastImport';
 
 export type SheetImportState =
   | { phase: 'choose'; problem: string | null }
   | { phase: 'reading' }
   | { phase: 'review'; file: string; read: SheetRead; plan: SheetImportPlan }
-  | { phase: 'done'; imported: SheetImportPlan };
+  | { phase: 'done'; imported: SheetImportPlan; save: ImportSave };
+
+/**
+ * Signed in, an import is done only once the database confirms it: `saving` until then,
+ * `saved`, or `notSaved` with how many entries did not make it (refused, or still waiting
+ * to be sent). `preview`: nothing is saved.
+ */
+export type ImportSave =
+  { state: 'preview' | 'saving' | 'saved' } | { state: 'notSaved'; refused: number };
 
 export const TOO_LARGE = 'The file is larger than 5 MB. Export a shorter period and import each.';
 
@@ -35,10 +54,35 @@ export async function readSheet(name: string, bytes: Uint8Array): Promise<SheetR
  * device and not kept; nothing is added (or synced) until `approve`, which plans again
  * against the ledger as it is then (so edits made meanwhile, or a second press, add no
  * duplicates). `undo` removes exactly what was imported, keeping later changes.
+ *
+ * Signed in, the last import's ids are also kept on this device (`last`), so it can be
+ * undone after a reload until it is dismissed. `ready` is true once the user's data has
+ * loaded (an undo before that would find nothing to remove).
  */
-export function useSheetImport() {
+export function useSheetImport(ready = false) {
   const [state, setState] = useState<SheetImportState>({ phase: 'choose', problem: null });
+  const [last, setLast] = useState<LastImport | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const key = useRef<string | null>(null);
   const busy = useRef(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    void (async () => {
+      key.current = await lastImportKey();
+      const saved = key.current ? await readLastImport(key.current) : null;
+      if (live) setLast(saved);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+
+  const forget = useCallback(() => {
+    setLast(null);
+    if (key.current) void clearLastImport(key.current);
+  }, []);
 
   const choose = useCallback(async () => {
     const picked = await pickFiles();
@@ -59,23 +103,50 @@ export function useSheetImport() {
     });
   }, []);
 
-  const approve = useCallback(() => {
+  const approve = useCallback(async () => {
     if (state.phase !== 'review' || busy.current) return;
     busy.current = true;
     const plan = planSheetImport(state.read, getLedger(), newId);
     useExpenseStore.getState().addImported(plan);
+    setNotice(null);
+    if (key.current && plan.transactions.length) {
+      const saved = lastImportOf(plan);
+      void saveLastImport(key.current, saved);
+      setLast(saved);
+    }
+    const cloud = isCloudActive(useSyncStatus.getState().status);
+    setState({ phase: 'done', imported: plan, save: { state: cloud ? 'saving' : 'preview' } });
+    if (cloud) {
+      const allSent = await flushCloudSync();
+      // Entries the database refused are taken out again (and named in a notice).
+      const kept = new Set(getLedger().transactions.map((item) => item.id));
+      const refused = plan.transactions.filter((item) => !kept.has(item.id)).length;
+      const save: ImportSave =
+        allSent && !refused ? { state: 'saved' } : { state: 'notSaved', refused };
+      setState((current) =>
+        current.phase === 'done' && current.imported === plan ? { ...current, save } : current,
+      );
+    }
     busy.current = false;
-    setState({ phase: 'done', imported: plan });
   }, [state]);
 
   const undo = useCallback(() => {
     if (state.phase !== 'done') return;
     const { rules } = useRecurringStore.getState();
     useExpenseStore.getState().restoreLedger(withoutImported(getLedger(), state.imported, rules));
+    forget();
     setState({ phase: 'choose', problem: null });
-  }, [state]);
+  }, [state, forget]);
+
+  /** Undoes the import kept on this device (after a reload). */
+  const undoLast = useCallback(() => {
+    if (!last) return;
+    const removed = undoLastImport(last);
+    forget();
+    setNotice(`Import undone: ${removed} ${removed === 1 ? 'entry' : 'entries'} removed.`);
+  }, [last, forget]);
 
   const reset = useCallback(() => setState({ phase: 'choose', problem: null }), []);
 
-  return { state, choose, approve, undo, reset };
+  return { state, choose, approve, undo, reset, last, undoLast, dismissLast: forget, notice };
 }

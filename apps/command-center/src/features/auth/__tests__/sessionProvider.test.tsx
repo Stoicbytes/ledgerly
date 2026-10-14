@@ -14,9 +14,9 @@ jest.mock('@/lib/data/authRepository', () => ({
 }));
 jest.mock('@/lib/data/mfaRepository', () => ({ needsSecondStep: jest.fn() }));
 
-type Listener = (event: string, session: { user: { email: string } } | null) => void;
+type Listener = (event: string, session: { user: { id: string; email: string } } | null) => void;
 let listener: Listener = () => undefined;
-const session = { user: { email: 'me@example.com' } };
+const session = { user: { id: 'user-1', email: 'me@example.com' } };
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -44,6 +44,8 @@ describe('SessionProvider', () => {
     jest.mocked(needsSecondStep).mockResolvedValue(false);
     await act(async () => listener('MFA_CHALLENGE_VERIFIED', session));
     await waitFor(() => expect(useSession.getState().status).toBe('signedIn'));
+    // Unsaved changes kept on this device are tied to this id.
+    expect(useSession.getState().userId).toBe('user-1');
   });
 
   it('a sign-out wins over a slower level check that started before it', async () => {

@@ -23,7 +23,7 @@ beforeEach(() => {
   useExpenseStore.getState().resetPreview();
   useRecurringStore.getState().resetPreview();
   useSyncStatus.getState().set('off');
-  jest.mocked(flushCloudSync).mockResolvedValue(undefined);
+  jest.mocked(flushCloudSync).mockResolvedValue(true);
   jest.mocked(reloadCloudData).mockResolvedValue(undefined);
   jest.mocked(hasUnsavedChanges).mockReturnValue(false);
 });

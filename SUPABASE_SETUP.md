@@ -27,7 +27,9 @@ This page lists what is set up on the Supabase side and how to manage it. Connec
 | `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                          |
 | `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                     |
 | `employers`, `payslips`, `pf_entries`               | 0016                | Salary & PF (payslips across employers, the PF passbook)   |
+| `reset_data(scope)`                                 | 0018                | Settings → Reset data                                      |
 | Allowlist and two-step rules on every table         | 0019                | Every request (see Security hardening below)               |
+| `sync_ledger_v2(jsonb)` (conflict checks)           | 0020                | Saving without overwriting newer data from another device  |
 
 `internal` (allowlist, hook, helpers) is not exposed through the Data API, so none of it is
 reachable from the browser.
@@ -35,7 +37,7 @@ reachable from the browser.
 ## One-time setup checklist
 
 1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
-   `202610080004_foundation.sql` to `202610190019_security_hardening.sql` (SQL Editor → paste →
+   `202610080004_foundation.sql` to `202610190020_sync_conflicts.sql` (SQL Editor → paste →
    Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
    function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
@@ -48,9 +50,14 @@ reachable from the browser.
    `https://ledgerly.vercel.app`.
 5. **Keys:** the app uses only the **Project URL** and the **publishable** key. Never use the
    secret or service-role key anywhere in the app or its Vercel variables.
-6. **Prices (optional, recommended):** deploy the `market-refresh` Edge Function and its daily
-   schedule ([below](#prices-the-market-refresh-function)). Without it, funds and stocks work
-   with NAVs and prices you enter by hand.
+6. **Prices (recommended):** deploy the `market-refresh` Edge Function and its daily schedule
+   ([below](#prices-the-market-refresh-function)). Automatic prices need both; without them,
+   funds and stocks work with NAVs and prices you enter by hand.
+7. **Backups:** set the two secrets of the daily backup workflow
+   ([below](#backups-and-restore)), or use a plan with Supabase's own backups.
+
+The whole go-live list, in order and including Vercel and GitHub, is
+[`docs/GO_LIVE.md`](docs/GO_LIVE.md).
 
 ## Managing access (SQL Editor)
 
@@ -278,6 +285,19 @@ an existing account is not on the list (the count only, no emails).
 real roles and JWT claims: password-only, after the code, another account, an account not on
 the allowlist, and a signed-out visitor.
 
+## Conflict checks when saving (migration 0020)
+
+`202610190020_sync_conflicts.sql` adds `sync_ledger_v2(changes)`, which the app now uses to save.
+It takes the same changes as `sync_ledger`, with the same limits and rules (it runs as the
+signed-in user, so Row Level Security and two-step sign-in apply), and adds one check: each row
+the app believes already exists carries the `updated_at` the app last saw. If the row was changed
+since (on another device or tab) or deleted, that row is skipped (never re-inserted) and returned
+under `conflicts`; the app then shows the newer version and says so. New rows and deletes work as
+before. `sync_ledger` keeps its signature and now runs the same code. Run it after 0018; safe to
+run again. Without it the app falls back to `sync_ledger` by itself (no conflict checks; the last
+save of a row wins). Tests: `supabase/tests/sync_conflicts.sql` (run with `psql -f` on a database
+built by `fresh_install.sh`).
+
 ## Bringing in existing funds and shares
 
 Use **Import** on the Mutual funds and Stocks pages with your broker's tradebooks
@@ -366,6 +386,62 @@ the app. To stop: `select cron.unschedule('market-refresh-evening');` (and `-mor
   If both fail, the run's message says why; values keep the last known price, and a price entered
   by hand (Edit stock / Edit fund) is used when it is newer.
 - Share prices are end of day; there is no free official live-quote service.
+
+## Backups and restore
+
+Two layers, for different accidents:
+
+- **Per user, in the app:** Settings → **Export everything** saves a JSON file; Settings →
+  **Restore from backup** adds its missing records back (never overwrites or deletes). Receipt
+  photos and portfolio images are not in the file.
+- **Whole database, daily:** `.github/workflows/db-backup.yml` runs every day at 02:47 IST (and
+  on **Actions → Database backup → Run workflow**). It dumps the `public` and `internal` schemas
+  (schema and data) and the sign-in accounts (`auth.users` and `auth.identities`, data only:
+  every app row belongs to a user id), encrypts each dump with GPG (AES-256, your passphrase)
+  as it is written, and keeps them as a workflow artifact for 30 days. No unencrypted copy is
+  stored. Left out: MFA factors, sessions, Storage files (receipts, portfolio media) and the
+  Supabase-managed schemas. Supabase's own daily backups and point-in-time recovery come with
+  paid plans (check in your plan).
+
+**Turn it on:** GitHub → Settings → Secrets and variables → Actions → add
+
+- `SUPABASE_DB_URL`: Supabase → **Connect** → **Session pooler** connection string, with the
+  database password in it (GitHub runners have no IPv6, so the direct `db.<ref>.supabase.co`
+  address fails).
+- `BACKUP_PASSPHRASE`: a long random passphrase. Keep a copy outside GitHub (a password
+  manager): without it the backups cannot be opened.
+
+Without the secrets the workflow prints a notice and succeeds. Run it once by hand and check
+that the artifact has two `.gpg` files.
+
+**Restore (into a new, empty project; never over the live one):**
+
+1. Download the artifact (Actions → the run → Artifacts) and unzip it.
+2. Decrypt with the passphrase (needs `gpg`; PostgreSQL 17 client tools, or
+   `docker run --rm -it -v "$PWD:/w" -w /w postgres:17 bash`):
+
+   ```bash
+   gpg --decrypt --output ledgerly-auth.dump ledgerly-auth-<time>.dump.gpg
+   gpg --decrypt --output ledgerly-app.dump ledgerly-app-<time>.dump.gpg
+   pg_restore --list ledgerly-app.dump | head   # look inside without restoring
+   ```
+
+3. Create a new Supabase project and apply every migration in order (this sets up tables,
+   grants, Row Level Security and functions exactly as the app expects).
+4. Load the sign-in accounts, then the app data (`$NEW_DB_URL`: the new project's session pooler
+   string):
+
+   ```bash
+   pg_restore --data-only --no-owner --no-privileges --dbname="$NEW_DB_URL" ledgerly-auth.dump
+   pg_restore --data-only --no-owner --no-privileges --dbname="$NEW_DB_URL" ledgerly-app.dump
+   ```
+
+5. Turn on the sign-up hook, deploy `market-refresh` and point the Vercel variables at the new
+   project ([`docs/GO_LIVE.md`](docs/GO_LIVE.md)); sign in and set up two-step sign-in again.
+6. Delete the decrypted `.dump` files when done.
+
+To bring back only what one user lost (a reset, a mistaken delete), use Settings → **Restore
+from backup** with their export instead.
 
 ## Two-step sign-in
 

@@ -1,5 +1,6 @@
 import { BRAND } from '@/branding';
 import type { CloudData } from '@/lib/data/ledgerRepository';
+import { BACKUP_FORMAT, BACKUP_VERSION } from '@/lib/domain/backup/types';
 import { todayIso } from '@/lib/domain/expenses';
 
 /**
@@ -7,13 +8,15 @@ import { todayIso } from '@/lib/domain/expenses';
  * accounts, categories, people, entries, recurring entries, notes (Recently deleted too),
  * funds, SIPs, shares, goals, employers, payslips, the PF passbook and the portfolio
  * site's content. Receipt photos stay in storage; entries keep a reference to them.
+ * Settings → Restore from backup reads it back (lib/domain/backup).
  */
 export function buildExport(data: CloudData, site: unknown, now = new Date()) {
   const { portfolio, noteExtras: _noteExtras, ...rest } = data;
   return {
     app: BRAND.name,
-    format: 'ledgerly-export',
-    version: 1,
+    // Restore from backup reads this format; bump the version when the shape changes.
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
     exportedAt: now.toISOString(),
     about: {
       money: 'Amounts are in paise (₹1 = 100 paise); NAVs and fund units are as entered.',
