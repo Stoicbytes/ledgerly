@@ -145,8 +145,27 @@ export function stockPosition(trades: Trade[], quote: Quote | null, asOf?: strin
 export const sharesHeldOn = (trades: Trade[], date: string) => replayStock(trades, date).quantity;
 
 /**
+ * The latest buy or sell price on or before `asOf`, adjusted for splits and bonuses after it
+ * (a 1:5 split divides it by 5, a 1:1 bonus by 2), so the shares held now are not valued at
+ * the old price. An estimate: there is no market price.
+ */
+export function lastTradePrice(trades: Trade[], asOf?: string) {
+  const sorted = sortTrades(trades).filter((trade) => !asOf || trade.date <= asOf);
+  let index = sorted.length - 1;
+  while (index >= 0 && !sorted[index].price) index -= 1;
+  if (index < 0) return null;
+  let price = sorted[index].price ?? 0;
+  for (const trade of sorted.slice(index + 1)) {
+    const from = trade.ratioFrom || 1;
+    if (trade.kind === 'split') price = (price * from) / (trade.ratioTo || from);
+    if (trade.kind === 'bonus') price = (price * from) / (from + (trade.ratioTo ?? 0));
+  }
+  return { price: Math.round(price), date: sorted[index].date };
+}
+
+/**
  * The price used to value a stock: the newest of the exchange close and a manual price,
- * else the price of the latest buy or sell.
+ * else the latest trade price adjusted for later splits and bonuses (an estimate).
  */
 export function stockQuote(stock: Stock, trades: Trade[], market: MarketData): Quote | null {
   const security = stock.isin ? market.securities[stock.isin] : undefined;
@@ -170,10 +189,8 @@ export function stockQuote(stock: Stock, trades: Trade[], market: MarketData): Q
       : null;
   if (exchange && manual) return manual.date > exchange.date ? manual : exchange;
   if (exchange || manual) return exchange ?? manual;
-  const last = sortTrades(trades.filter((trade) => trade.price)).pop();
-  return last?.price
-    ? { price: last.price, date: last.date, source: 'last entry', previous: null }
-    : null;
+  const last = lastTradePrice(trades);
+  return last?.price ? { ...last, source: 'last entry', previous: null } : null;
 }
 
 export function stockXirr(position: StockPosition, asOf: string): number | null {

@@ -25,7 +25,11 @@ function profile(v: unknown): Profile {
     about: str(p.about, 6000),
     location: str(p.location, 80),
     timezone: /^[A-Za-z]+(\/[A-Za-z0-9_+-]+){1,2}$/.test(str(p.timezone)) ? str(p.timezone) : '',
-    email: /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(str(p.email, 254)) ? str(p.email) : '',
+    email: /^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,63}$/.test(
+      str(p.email, 254),
+    )
+      ? str(p.email)
+      : '',
     availability: oneOf(p.availability, ['open', 'busy', 'hidden'] as const, 'hidden'),
     availabilityNote: str(p.availabilityNote, 80),
     avatar: media(p.avatar),

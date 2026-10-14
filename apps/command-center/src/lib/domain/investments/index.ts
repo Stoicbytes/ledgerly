@@ -12,3 +12,4 @@ export * from './goals';
 export * from './costs';
 export * from './benchmark';
 export * from './freshness';
+export * from './lockIn';

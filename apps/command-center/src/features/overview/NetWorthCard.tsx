@@ -33,11 +33,14 @@ export function NetWorthCard({ data }: { data: OverviewData }) {
           ]}
         />
         <Delta value={data.savings} format="money" variant="pill" comparison="saved this month" />
-        {data.pf || data.cardDue ? (
+        {data.pf || data.cardDue || data.leftOut.length ? (
           <Text variant="caption" color="textSecondary">
             {[
               data.pf ? `Includes PF ${formatMoneyWhole(data.pf)}` : '',
               data.cardDue ? 'Credit cards not counted' : '',
+              data.leftOut.length
+                ? `${data.leftOut.join(', ')} counted at market value from Investments`
+                : '',
             ]
               .filter(Boolean)
               .join(' · ')}

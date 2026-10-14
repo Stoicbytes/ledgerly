@@ -116,11 +116,13 @@ downloads it as **PDF** or **Word** (`Firstname-Lastname-CV.pdf` / `.docx`), mad
 The form posts to `portfolio_contact`, which:
 
 1. accepts only a published portfolio whose contact section is shown;
-2. checks name (1–100 characters), email and message (10–4000 characters, at most 3 links);
+2. checks name (1–100 characters), email (letters, digits and `. _ + -`, a plain domain; since 0019) and message (10–4000 characters, at most 3 links);
 3. silently drops a submission that fills the hidden field or arrives under 2.5 seconds after
    the page loaded (the bot is told it worked);
 4. allows 3 messages per 10 minutes and 10 per day from one network (counted by a salted hash
-   of the IP, kept for a day; the IP itself is never stored), and 100 per day in total;
+   of the IP, kept for a day; the IP itself is never stored), and 100 per day in total. The IP
+   is only the `cf-connecting-ip` header set by the proxy in front of Supabase (since 0019);
+   headers a visitor can send are ignored;
 5. stores the message for you. **No email is sent**: check Messages in the dashboard.
 
 These limits make abuse slow and bounded, not impossible. Messages are visible only to you.
