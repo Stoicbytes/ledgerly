@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { pickFiles } from '@/features/investments/import/pickFiles';
@@ -12,6 +12,15 @@ import {
   type SheetRead,
 } from '@/lib/domain/expenses/sheetImports';
 import { newId } from '@/lib/ids';
+import {
+  clearLastImport,
+  lastImportKey,
+  lastImportOf,
+  readLastImport,
+  saveLastImport,
+  undoLastImport,
+  type LastImport,
+} from './lastImport';
 
 export type SheetImportState =
   | { phase: 'choose'; problem: string | null }
@@ -45,10 +54,35 @@ export async function readSheet(name: string, bytes: Uint8Array): Promise<SheetR
  * device and not kept; nothing is added (or synced) until `approve`, which plans again
  * against the ledger as it is then (so edits made meanwhile, or a second press, add no
  * duplicates). `undo` removes exactly what was imported, keeping later changes.
+ *
+ * Signed in, the last import's ids are also kept on this device (`last`), so it can be
+ * undone after a reload until it is dismissed. `ready` is true once the user's data has
+ * loaded (an undo before that would find nothing to remove).
  */
-export function useSheetImport() {
+export function useSheetImport(ready = false) {
   const [state, setState] = useState<SheetImportState>({ phase: 'choose', problem: null });
+  const [last, setLast] = useState<LastImport | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const key = useRef<string | null>(null);
   const busy = useRef(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    void (async () => {
+      key.current = await lastImportKey();
+      const saved = key.current ? await readLastImport(key.current) : null;
+      if (live) setLast(saved);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+
+  const forget = useCallback(() => {
+    setLast(null);
+    if (key.current) void clearLastImport(key.current);
+  }, []);
 
   const choose = useCallback(async () => {
     const picked = await pickFiles();
@@ -74,6 +108,12 @@ export function useSheetImport() {
     busy.current = true;
     const plan = planSheetImport(state.read, getLedger(), newId);
     useExpenseStore.getState().addImported(plan);
+    setNotice(null);
+    if (key.current && plan.transactions.length) {
+      const saved = lastImportOf(plan);
+      void saveLastImport(key.current, saved);
+      setLast(saved);
+    }
     const cloud = isCloudActive(useSyncStatus.getState().status);
     setState({ phase: 'done', imported: plan, save: { state: cloud ? 'saving' : 'preview' } });
     if (cloud) {
@@ -94,10 +134,19 @@ export function useSheetImport() {
     if (state.phase !== 'done') return;
     const { rules } = useRecurringStore.getState();
     useExpenseStore.getState().restoreLedger(withoutImported(getLedger(), state.imported, rules));
+    forget();
     setState({ phase: 'choose', problem: null });
-  }, [state]);
+  }, [state, forget]);
+
+  /** Undoes the import kept on this device (after a reload). */
+  const undoLast = useCallback(() => {
+    if (!last) return;
+    const removed = undoLastImport(last);
+    forget();
+    setNotice(`Import undone: ${removed} ${removed === 1 ? 'entry' : 'entries'} removed.`);
+  }, [last, forget]);
 
   const reset = useCallback(() => setState({ phase: 'choose', problem: null }), []);
 
-  return { state, choose, approve, undo, reset };
+  return { state, choose, approve, undo, reset, last, undoLast, dismissLast: forget, notice };
 }

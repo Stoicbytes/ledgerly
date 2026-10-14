@@ -7,6 +7,9 @@ export type PickedFile = { name: string; bytes: Uint8Array };
  */
 export const canPickFiles = false;
 
-export async function pickFiles(): Promise<PickedFile[] | null> {
+/** What the chooser offers: file types, the largest file kept, and one or several files. */
+export type PickOptions = { accept?: string; maxBytes?: number; multiple?: boolean };
+
+export async function pickFiles(_options?: PickOptions): Promise<PickedFile[] | null> {
   return null;
 }

@@ -94,7 +94,7 @@ export function ResetCard({ index }: { index: number }) {
             <Text>{`This deletes ${chosen.summary()}.`}</Text>
             <Text variant="caption" color="textSecondary">
               {cloud
-                ? 'It cannot be undone. Download a backup with Export everything first if you may want it back.'
+                ? 'It cannot be undone here. Download a file with Export everything first: Restore from backup can add your records back later (receipt photos and portfolio images are not in the file).'
                 : 'Preview: only the sample data on this screen is cleared.'}
             </Text>
             <TextField

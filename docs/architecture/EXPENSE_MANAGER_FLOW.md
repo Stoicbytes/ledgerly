@@ -174,7 +174,14 @@ Errors appear under the field and are announced to screen readers. On save, focu
 
 **Phones: pickers under their field.** On phones the picker for the active field (category grid, accounts, date, split, note suggestions) opens directly under that field instead of at the end of the form; wide screens keep the picker column beside the fields.
 
-## 9. Path to real data (Phases 2–3)
+## 9. Path to real data (Phases 2–3), historical
+
+> **Superseded.** This was the plan before the cloud sync was built; it is kept for history and
+> does not describe the app. What was built instead: deletes remove the row (no `deleted_at`
+> soft delete; notes alone have Recently deleted), the stores are saved by one batched RPC
+> (`sync_ledger`, no TanStack Query), and receipts are in the private `receipts` bucket (there
+> is no `attachments` bucket). Current design: [DATABASE.md](DATABASE.md) and
+> [DATA_ACCESS.md](DATA_ACCESS.md).
 
 | Preview store action                       | Phase 3 replacement                                                                                                                                                                                                                                                                         |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

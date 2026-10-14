@@ -42,7 +42,7 @@ supabase/migrations/   Database schema, rules and functions, applied in order (0
 supabase/functions/    market-refresh: AMFI NAVs and exchange closing prices, fetched server-side
 docs/                  Product definition, architecture, decisions and feature guides
 SUPABASE_SETUP.md      Setting up and verifying the Supabase project
-.github/workflows/     CI and Edge Function deployment
+.github/workflows/     CI, Edge Function deployment and the daily database backup
 ```
 
 ## Getting started
@@ -73,15 +73,21 @@ connection: there is no offline mode.
   `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `PORTFOLIO_HANDLE`, then redeploy without the build
   cache. Details: [`apps/command-center/README.md`](apps/command-center/README.md#sign-in) and
   [`apps/portfolio/README.md`](apps/portfolio/README.md#deploy-on-vercel).
+- **Going live:** follow the single ordered checklist in [`docs/GO_LIVE.md`](docs/GO_LIVE.md).
 - **Database:** run the files in `supabase/migrations/` in order in the Supabase SQL Editor; each
-  is safe to run again and documents its rollback.
-- **Prices:** deploy the `market-refresh` Edge Function and, optionally, its daily schedule
-  ([`SUPABASE_SETUP.md`](SUPABASE_SETUP.md#prices-the-market-refresh-function)).
+  is safe to run again. From 0007 on each file documents its rollback; the base schema
+  (0004–0006) has none, and 0017 cannot be undone (it drops two unused tables).
+- **Prices:** deploy the `market-refresh` Edge Function and its daily schedule (needed for
+  automatic prices; [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md#prices-the-market-refresh-function)).
+- **Backups:** the daily encrypted database dump (`.github/workflows/db-backup.yml`) runs once
+  its two secrets are set; Settings → **Export everything** and **Restore from backup** work per
+  user ([`SUPABASE_SETUP.md`](SUPABASE_SETUP.md#backups-and-restore)).
 
 ## Documentation
 
 | Document                                                                   | Covers                                                        |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`docs/GO_LIVE.md`](docs/GO_LIVE.md)                                       | The ordered go-live checklist for the owner                   |
 | [`docs/PRODUCT.md`](docs/PRODUCT.md)                                       | Purpose, features and their status                            |
 | [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)   | Modules, data flow, security and deployment                   |
 | [`docs/architecture/DATA_ACCESS.md`](docs/architecture/DATA_ACCESS.md)     | Every call to Supabase and why it is made                     |
@@ -100,7 +106,7 @@ connection: there is no offline mode.
   elsewhere appear when you return to the app.
 - Share prices are end of day; there is no free official live-quote source.
 - Account deletion is not in the app yet. Settings → **Export everything** saves all your data as
-  one JSON file.
+  one JSON file and **Restore from backup** adds it back (receipt photos are not in the file).
 - The whole ledger loads at sign-in, which suits personal scale.
 
 ## Security
