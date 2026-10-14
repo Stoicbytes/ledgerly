@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { Square, SquareCheck } from '@/components/icons';
 import { Text } from '@/components/ui';
 import { parseIsoDate } from '@/lib/domain/expenses';
-import type { HoldingPlan, PlannedTrade } from '@/lib/domain/investments';
+import type { HoldingPlan, PlannedTrade } from '@/lib/domain/investments/tradebookImport';
 import { formatMoney } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
 

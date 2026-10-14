@@ -1,5 +1,6 @@
 import { accounts, categories, transactions } from '@/lib/domain/expenses/__fixtures__/ledger';
 import { useExpenseStore } from '../expenseStore';
+import { parseLastEntry } from '../lastEntry';
 import { nextField, useTransactionForm } from '../transactionForm';
 
 const form = () => useTransactionForm.getState();
@@ -11,7 +12,7 @@ beforeEach(() => {
     editingId: null,
     errors: {},
     active: null,
-    last: { kind: 'expense', accountId: null },
+    last: { kind: 'expense', accounts: {} },
   });
 });
 
@@ -90,6 +91,31 @@ describe('fast entry flow', () => {
     form().close();
     form().openNew();
     expect(form().draft.accountId).toBe('cash');
+  });
+
+  it('remembers the account per type on this device, ignoring deleted accounts', () => {
+    form().openNew({ kind: 'income', date: '2026-10-04' });
+    form().update({ amountText: '500', categoryId: 'salary', accountId: 'bank' });
+    expect(form().submit('save').ok).toBe(true);
+    expect(form().last).toEqual({ kind: 'income', accounts: { income: 'bank' } });
+    expect(parseLastEntry(JSON.stringify(form().last))).toEqual(form().last);
+
+    form().openNew({ kind: 'expense' });
+    expect(form().draft.accountId).toBeNull();
+    form().openNew();
+    expect(form().draft).toMatchObject({ kind: 'income', accountId: 'bank' });
+
+    useTransactionForm.setState({ last: { kind: 'expense', accounts: { expense: 'gone' } } });
+    form().openNew();
+    expect(form().draft.accountId).toBeNull();
+  });
+
+  it('reads saved choices defensively', () => {
+    expect(parseLastEntry(null)).toEqual({ kind: 'expense', accounts: {} });
+    expect(parseLastEntry('not json')).toEqual({ kind: 'expense', accounts: {} });
+    expect(
+      parseLastEntry('{"kind":"x","accounts":{"income":"a","other":"b","expense":7}}'),
+    ).toEqual({ kind: 'expense', accounts: { income: 'a' } });
   });
 
   it('adds an entry once even if Save is tapped twice while the sheet closes', () => {

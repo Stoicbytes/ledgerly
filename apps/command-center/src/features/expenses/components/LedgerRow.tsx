@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Camera } from '@/components/icons';
 import { CategoryIcon, Text } from '@/components/ui';
@@ -16,8 +17,15 @@ type LedgerRowProps = {
   showDate?: boolean;
 };
 
-/** One entry in any list. Pressing it opens the entry in the editor. */
-export function LedgerRow({ transaction, accountId, showDate = false }: LedgerRowProps) {
+/**
+ * One entry in any list. Pressing it opens the entry in the editor. Memoised: a list
+ * re-renders only the rows whose entry changed.
+ */
+export const LedgerRow = memo(function LedgerRow({
+  transaction,
+  accountId,
+  showDate = false,
+}: LedgerRowProps) {
   const theme = useTheme();
   const lookup = useLookup();
   const openEdit = useTransactionForm((state) => state.openEdit);
@@ -75,4 +83,4 @@ export function LedgerRow({ transaction, accountId, showDate = false }: LedgerRo
       </Text>
     </Pressable>
   );
-}
+});

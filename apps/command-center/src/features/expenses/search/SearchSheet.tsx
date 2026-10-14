@@ -11,6 +11,8 @@ import {
   todayIso,
   transactionsCsv,
 } from '@/lib/domain/expenses';
+import { RevealMore, useReveal } from '@/components/layout/RevealMore';
+import { useDebouncedInput } from '@/hooks/useDebouncedInput';
 import { useTheme } from '@/theme';
 import { TextField } from '../components/TextField';
 import { LedgerRow } from '../components/LedgerRow';
@@ -38,12 +40,15 @@ export function SearchSheet() {
   const update = useSearchStore((state) => state.update);
   const clear = useSearchStore((state) => state.clear);
   const [exporting, setExporting] = useState(false);
+  const [text, setText] = useDebouncedInput(filters.text, (next) => update({ text: next }));
   const searching = isSearching(filters);
   const results = useMemo(
     () => (searching ? searchTransactions(ledger.transactions, filters, ledger) : []),
     [searching, ledger, filters],
   );
   const totals = searchTotals(results);
+  const shown = Math.min(results.length, SHOWN);
+  const reveal = useReveal(shown, JSON.stringify(filters));
   const exportCsv = async () => {
     const rows = searching ? results : ledger.transactions;
     setExporting(true);
@@ -83,8 +88,8 @@ export function SearchSheet() {
         <TextField
           label="Search"
           placeholder="Words or an amount, e.g. swiggy or 250"
-          value={filters.text}
-          onChangeText={(text) => update({ text })}
+          value={text}
+          onChangeText={setText}
           maxLength={80}
           autoFocus
         />
@@ -103,9 +108,10 @@ export function SearchSheet() {
             <Text variant="label" color="textSecondary" accessibilityLiveRegion="polite">
               {`${totals.count} ${totals.count === 1 ? 'entry' : 'entries'} · spent ${formatEntry(totals.expense)} · received ${formatEntry(totals.income)}`}
             </Text>
-            {results.slice(0, SHOWN).map((transaction) => (
+            {results.slice(0, reveal.limit).map((transaction) => (
               <LedgerRow key={transaction.id} transaction={transaction} showDate />
             ))}
+            <RevealMore rest={reveal.rest} onMore={reveal.more} />
             {results.length > SHOWN ? (
               <Text variant="caption" color="textTertiary">
                 {`Showing the newest ${SHOWN}. Narrow the search, or export to see all ${results.length}.`}

@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { View } from 'react-native';
 import { Download } from '@/components/icons';
 import { useToast } from '@/components/feedback';
 import { Sheet } from '@/components/overlays';
 import { Button, Text } from '@/components/ui';
-import type { HoldingPlan } from '@/lib/domain/investments';
+import type { HoldingPlan } from '@/lib/domain/investments/tradebookImport';
 import { useTheme } from '@/theme';
 import { ImportHoldingCard } from './ImportHoldingCard';
 import { canPickFiles } from './pickFiles';
@@ -157,15 +156,5 @@ export function ImportTradebookSheet({ onClose }: { onClose: () => void }) {
         </View>
       )}
     </Sheet>
-  );
-}
-
-export function ImportTradebookButton() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button label="Import" variant="secondary" icon={Download} onPress={() => setOpen(true)} />
-      {open ? <ImportTradebookSheet onClose={() => setOpen(false)} /> : null}
-    </>
   );
 }

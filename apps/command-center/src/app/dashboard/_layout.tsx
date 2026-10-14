@@ -1,6 +1,7 @@
 import { Redirect, usePathname } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useSession } from '@/features/auth/sessionStore';
+import { PreviewGate } from '@/features/preview/PreviewGate';
 import { AppShell } from '@/features/shell/AppShell';
 import { CloudGate } from '@/features/sync/CloudGate';
 import { useTheme } from '@/theme';
@@ -29,8 +30,10 @@ export default function DashboardLayout() {
     return <Redirect href={{ pathname: '/verify-code', params: { redirect: pathname } }} />;
   }
   return (
-    <CloudGate>
-      <AppShell />
-    </CloudGate>
+    <PreviewGate>
+      <CloudGate>
+        <AppShell />
+      </CloudGate>
+    </PreviewGate>
   );
 }

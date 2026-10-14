@@ -34,7 +34,9 @@ const path = require('path');
 const zlib = require('zlib');
 
 const FIRST_LOAD_CEILING_KIB = 450;
-const TOTAL_CEILING_KIB = 600;
+// 630: restore, import, PDF and sample-data code moved into chunks loaded only when used
+// (first load fell to ~439 KiB); splitting costs some compression in the total.
+const TOTAL_CEILING_KIB = 630;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');

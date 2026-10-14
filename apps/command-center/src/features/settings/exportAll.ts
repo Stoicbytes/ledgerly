@@ -1,5 +1,6 @@
 import { BRAND } from '@/branding';
 import type { CloudData } from '@/lib/data/ledgerRepository';
+import { todayIso } from '@/lib/domain/expenses';
 
 /**
  * One file with everything you keep in the app, to keep as a backup or take elsewhere:
@@ -35,5 +36,6 @@ export function buildExport(data: CloudData, site: unknown, now = new Date()) {
   };
 }
 
+/** Named by the local date (the UTC date is the day before until 05:30 in India). */
 export const exportFileName = (now = new Date()) =>
-  `${BRAND.name.toLowerCase()}-export-${now.toISOString().slice(0, 10)}.json`;
+  `${BRAND.name.toLowerCase()}-export-${todayIso(now)}.json`;

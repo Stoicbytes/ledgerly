@@ -28,6 +28,7 @@ export function ColorPicker({
             key={color}
             role="radio"
             accessibilityState={{ checked: selected }}
+            aria-checked={selected}
             accessibilityLabel={color === 'default' ? 'No colour' : `${color} colour`}
             onPress={() => onChange(color)}
             style={{

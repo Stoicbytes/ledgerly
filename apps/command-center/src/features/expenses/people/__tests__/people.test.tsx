@@ -16,7 +16,7 @@ beforeEach(() => {
     editingId: null,
     active: null,
     errors: {},
-    last: { kind: 'expense', accountId: null },
+    last: { kind: 'expense', accounts: {} },
   });
 });
 

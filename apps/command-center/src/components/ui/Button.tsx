@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View, type PressableProps } f
 import type { LucideIcon } from '../icons';
 import { useInteractionState } from '@/hooks/useInteractionState';
 import { minHitSize, useTheme, type ColorRoles } from '@/theme';
+import { HitArea } from './HitArea';
 import { Text } from './Text';
 
 export type ButtonVariant = 'primary' | 'ink' | 'secondary' | 'ghost' | 'danger' | 'onBrand';
@@ -80,6 +81,7 @@ export function Button({
         },
       ]}
     >
+      <HitArea height={heights[size]} />
       <View style={styles.content}>
         {loading ? (
           <ActivityIndicator size="small" color={fg} />

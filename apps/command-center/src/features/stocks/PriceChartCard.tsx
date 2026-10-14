@@ -53,6 +53,7 @@ export function PriceChartCard({
                 key={row.stock.id}
                 role="radio"
                 accessibilityState={{ checked: active }}
+                aria-checked={active}
                 accessibilityLabel={`Chart ${row.stock.name}`}
                 onPress={() => onSelect(row.stock.id)}
                 style={{

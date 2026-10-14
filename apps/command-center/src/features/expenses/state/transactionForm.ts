@@ -12,6 +12,7 @@ import {
 } from '@/lib/domain/expenses';
 import { editDraft } from './editDraft';
 import { getLedger, useExpenseStore } from './expenseStore';
+import { NO_LAST_ENTRY, readLastEntry, saveLastEntry, type LastEntry } from './lastEntry';
 
 /** Field order for the auto-advancing entry flow (Money Manager style). */
 const FLOW: Record<TransactionKind, DraftField[]> = {
@@ -49,7 +50,8 @@ type FormState = {
   draft: TransactionDraft;
   active: DraftField | null;
   errors: DraftErrors;
-  last: { kind: TransactionKind; accountId: string | null };
+  /** Remembered on this device across visits (lastEntry.ts). */
+  last: LastEntry;
   /** A receipt photo is being uploaded: saving waits for it. */
   uploading: boolean;
   /** Counts openings, so a slow upload never lands in a form opened later. */
@@ -105,7 +107,7 @@ export const useTransactionForm = create<FormState>((set, get) => ({
   draft: emptyDraft('expense', null),
   active: null,
   errors: {},
-  last: { kind: 'expense', accountId: null },
+  last: NO_LAST_ENTRY,
   uploading: false,
   opened: 0,
 
@@ -114,6 +116,11 @@ export const useTransactionForm = create<FormState>((set, get) => ({
   openNew: (defaults) => {
     const { last, opened } = get();
     const kind = defaults?.kind ?? last.kind;
+    // The account last used for this type, if it still exists.
+    const remembered = last.accounts[kind];
+    const accountId = getLedger().accounts.some((account) => account.id === remembered)
+      ? (remembered ?? null)
+      : null;
     set({
       open: true,
       opened: opened + 1,
@@ -121,7 +128,7 @@ export const useTransactionForm = create<FormState>((set, get) => ({
       editingId: null,
       errors: {},
       active: 'amount',
-      draft: { ...emptyDraft(kind, last.accountId), ...defaults },
+      draft: { ...emptyDraft(kind, accountId), ...defaults },
     });
   },
 
@@ -192,7 +199,11 @@ export const useTransactionForm = create<FormState>((set, get) => ({
       ? (ledger.transactions.find((item) => item.id === editingId) ?? null)
       : null;
     const transaction = useExpenseStore.getState().saveTransaction(value, editingId);
-    const last = { kind: value.kind, accountId: value.accountId };
+    const last: LastEntry = {
+      kind: value.kind,
+      accounts: { ...get().last.accounts, [value.kind]: value.accountId },
+    };
+    saveLastEntry(last);
     if (mode === 'continue') {
       // Keep type, date and account for the next entry; clear the rest.
       set({
@@ -208,3 +219,8 @@ export const useTransactionForm = create<FormState>((set, get) => ({
     return { ok: true, transaction, created: !editingId, previous };
   },
 }));
+
+// Brings back the last type and accounts used on this device (unless an entry was saved first).
+void readLastEntry().then((last) =>
+  useTransactionForm.setState((state) => (state.last === NO_LAST_ENTRY ? { last } : state)),
+);

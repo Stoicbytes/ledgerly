@@ -2,17 +2,13 @@ import { useCallback, useRef, useState } from 'react';
 import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { pickFiles } from '@/features/investments/import/pickFiles';
+import { withoutImported } from '@/lib/domain/expenses';
 import {
   planSheetImport,
   readExpenseSheet,
-  withoutImported,
   type SheetImportPlan,
   type SheetRead,
-} from '@/lib/domain/expenses';
-import { readCsvRows } from '@/lib/files/csv';
-import { inflateRaw } from '@/lib/files/inflate';
-import { readXlsxRows } from '@/lib/files/xlsx';
-import { FileFormatError } from '@/lib/files/zip';
+} from '@/lib/domain/expenses/sheetImports';
 import { newId } from '@/lib/ids';
 
 export type SheetImportState =
@@ -28,15 +24,10 @@ export async function readSheet(name: string, bytes: Uint8Array): Promise<SheetR
     const problem = 'This is an old .xls file. Open it and save it as .xlsx or .csv first.';
     return { rows: [], skipped: [], problems: [problem] };
   }
-  try {
-    const rows = /\.csv$/i.test(name)
-      ? readCsvRows(new TextDecoder().decode(bytes))
-      : await readXlsxRows(bytes, inflateRaw);
-    return readExpenseSheet(rows);
-  } catch (error) {
-    const reason = error instanceof FileFormatError ? error.message : 'It could not be read.';
-    return { rows: [], skipped: [], problems: [reason] };
-  }
+  const { readSpreadsheet } = await import('@/lib/files/spreadsheet');
+  const read = await readSpreadsheet(name, bytes);
+  if ('problem' in read) return { rows: [], skipped: [], problems: [read.problem] };
+  return readExpenseSheet(read.rows);
 }
 
 /**

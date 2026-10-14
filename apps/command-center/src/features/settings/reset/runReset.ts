@@ -1,5 +1,6 @@
 import { flushCloudSync, hasUnsavedChanges, reloadCloudData } from '@/features/sync/cloudSync';
 import { resetData, ResetUnavailableError } from '@/lib/data/resetRepository';
+import { useResetMissing } from '../dbUpdates';
 import type { ResetOption } from './resetScopes';
 
 /**
@@ -18,7 +19,14 @@ export async function runReset(option: ResetOption, cloud: boolean): Promise<str
       'Some changes are still waiting to be saved. Check your connection and try again.',
     );
   }
-  const counts = await resetData(option.scope);
+  let counts: Record<string, number>;
+  try {
+    counts = await resetData(option.scope);
+  } catch (error) {
+    // Settings lists the missing migration from now on.
+    if (error instanceof ResetUnavailableError) useResetMissing.setState({ missing: true });
+    throw error;
+  }
   await reloadCloudData();
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
   return `${option.title} reset: ${total.toLocaleString('en-IN')} ${total === 1 ? 'item' : 'items'} deleted.`;

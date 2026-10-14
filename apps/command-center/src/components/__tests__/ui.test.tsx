@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useState } from 'react';
-import { Button, Delta, Money, ProgressBar, SegmentedControl } from '@/components/ui';
+import { Button, Delta, Money, ProgressBar, SegmentedControl, Text } from '@/components/ui';
+import { ResponsiveGrid } from '@/components/layout/ResponsiveGrid';
 import { renderWithProviders } from '@/test/render';
 
 describe('Money', () => {
@@ -80,6 +81,27 @@ describe('SegmentedControl', () => {
     expect(screen.getByRole('radio', { name: 'Expense' }).props.accessibilityState.checked).toBe(
       false,
     );
+  });
+});
+
+describe('ResponsiveGrid', () => {
+  it('lays out rows of equal cells from the first render (phone: two columns)', async () => {
+    await renderWithProviders(
+      <ResponsiveGrid columns={{ sm: 2, md: 4 }}>
+        <Text>One</Text>
+        <Text>Two</Text>
+        <Text>Three</Text>
+      </ResponsiveGrid>,
+    );
+    type Node = { parent: Node | null; props: { style?: { flexDirection?: string } } };
+    const rowOf = (text: string) => {
+      let node = screen.getByText(text) as unknown as Node | null;
+      while (node && node.props.style?.flexDirection !== 'row') node = node.parent;
+      return node;
+    };
+    expect(rowOf('One')).toBeTruthy();
+    expect(rowOf('One')).toBe(rowOf('Two'));
+    expect(rowOf('Three')).not.toBe(rowOf('One'));
   });
 });
 

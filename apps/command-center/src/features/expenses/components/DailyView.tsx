@@ -9,6 +9,7 @@ import { useMonthView } from '../hooks/useMonthView';
 import { useTransactionForm } from '../state/transactionForm';
 import { LedgerRow } from './LedgerRow';
 import { PanelScroll } from '@/components/layout/PanelScroll';
+import { RevealMore, useReveal } from '@/components/layout/RevealMore';
 
 const weekday = new Intl.DateTimeFormat('en-IN', { weekday: 'short' });
 
@@ -17,6 +18,8 @@ export function DailyView() {
   const theme = useTheme();
   const { groups, accountId, today, month } = useMonthView();
   const openNew = useTransactionForm((state) => state.openNew);
+  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+  const { limit, rest, more } = useReveal(total, `${month}:${accountId ?? ''}`);
   if (!groups.length) {
     return (
       <EmptyState
@@ -29,7 +32,7 @@ export function DailyView() {
   }
   return (
     <PanelScroll gap={theme.space[3]}>
-      {groups.map((group) => (
+      {firstRows(groups, limit).map((group) => (
         <View key={group.date} style={{ gap: 2 }}>
           <DayHeader group={group} isToday={group.date === today} />
           {group.items.map((transaction) => (
@@ -37,8 +40,23 @@ export function DailyView() {
           ))}
         </View>
       ))}
+      <RevealMore rest={rest} onMore={more} />
     </PanelScroll>
   );
+}
+
+/** The days holding the first `limit` entries (the last day cut short if needed). */
+export function firstRows(groups: DayGroup[], limit: number): DayGroup[] {
+  const shown: DayGroup[] = [];
+  let left = limit;
+  for (const group of groups) {
+    if (left <= 0) break;
+    shown.push(
+      left >= group.items.length ? group : { ...group, items: group.items.slice(0, left) },
+    );
+    left -= group.items.length;
+  }
+  return shown;
 }
 
 function DayHeader({ group, isToday }: { group: DayGroup; isToday: boolean }) {
