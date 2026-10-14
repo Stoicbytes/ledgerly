@@ -9,10 +9,14 @@ type Handlers = {
   hasUnsavedChanges: () => boolean;
 };
 
+/** While the app is in front, `onReturn` also runs this often (it decides whether to load). */
+export const REFRESH_EVERY_MS = 5 * 60_000;
+
 /**
- * Watches the page (web) or the app (phones) going to the background and coming back.
- * On the web, leaving or reloading the page while a change is unsaved also asks first.
- * Returns the function that stops watching.
+ * Watches the page (web) or the app (phones) going to the background and coming back,
+ * the window getting focus again, and time passing while it is in front. On the web,
+ * leaving or reloading the page while a change is unsaved also asks first. Returns the
+ * function that stops watching.
  */
 export function watchLifecycle(handlers: Handlers): () => void {
   // Phones (React Native) have a window object but no page events.
@@ -23,8 +27,18 @@ export function watchLifecycle(handlers: Handlers): () => void {
       else if (state === 'active' && previous !== 'active') handlers.onReturn();
       previous = state;
     });
-    return () => subscription.remove();
+    const every = setInterval(() => {
+      if (AppState.currentState === 'active') handlers.onReturn();
+    }, REFRESH_EVERY_MS);
+    return () => {
+      subscription.remove();
+      clearInterval(every);
+    };
   }
+  const onFocus = () => handlers.onReturn();
+  const every = setInterval(() => {
+    if (document.visibilityState === 'visible') handlers.onReturn();
+  }, REFRESH_EVERY_MS);
   const onVisibility = () => {
     if (document.visibilityState === 'hidden') handlers.onHide();
     else if (document.visibilityState === 'visible') handlers.onReturn();
@@ -36,7 +50,10 @@ export function watchLifecycle(handlers: Handlers): () => void {
   };
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('beforeunload', onLeave);
+  window.addEventListener('focus', onFocus);
   return () => {
+    clearInterval(every);
+    window.removeEventListener('focus', onFocus);
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('beforeunload', onLeave);
   };

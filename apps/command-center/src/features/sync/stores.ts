@@ -45,8 +45,10 @@ export function applyToStores(data: CloudData) {
     employers,
     payslips,
     pfEntries,
+    versions,
     ...ledger
   } = data;
+  void versions; // Kept by the sync, not by the screens.
   useExpenseStore.setState(ledger);
   // Without migration 0012 there is nowhere to keep recurring entries: Repeat is hidden.
   useRecurringStore.setState({ rules: recurring ?? [], available: recurring !== undefined });

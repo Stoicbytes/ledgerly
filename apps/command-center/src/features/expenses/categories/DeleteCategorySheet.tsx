@@ -8,12 +8,13 @@ import {
   entryCounts,
   subcategoriesOf,
   topLevelCategories,
+  undoCategoryDelete,
   type Category,
 } from '@/lib/domain/expenses';
 import { useTheme } from '@/theme';
 import { iconFor } from '../categoryIcons';
 import { useLedger } from '../hooks/useLedger';
-import { useExpenseStore } from '../state/expenseStore';
+import { getLedger, useExpenseStore } from '../state/expenseStore';
 
 type DeleteCategorySheetProps = {
   category: Category | null;
@@ -38,11 +39,15 @@ export function DeleteCategorySheet({ category, onClose, onDeleted }: DeleteCate
     (item) => item.id !== category.id,
   );
   const confirm = () => {
-    const previous = useExpenseStore.getState().deleteCategory(category.id, target);
+    const store = useExpenseStore.getState();
+    const before = store.deleteCategory(category.id, target);
+    const after = getLedger();
     const destination = others.find((item) => item.id === target)?.name ?? 'Uncategorized';
+    // Undo puts back only what the delete changed; later additions stay.
+    const undo = () => store.restoreLedger(undoCategoryDelete(before, after, getLedger()));
     toast.show({
       message: `${category.name} deleted${entries ? ` · entries moved to ${destination}` : ''}`,
-      action: { label: 'Undo', onPress: () => useExpenseStore.getState().restoreLedger(previous) },
+      action: { label: 'Undo', onPress: undo },
     });
     onDeleted();
   };

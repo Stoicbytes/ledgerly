@@ -5,7 +5,7 @@ import { LogOut, Shield } from '@/components/icons';
 import { ConfirmSheet } from '@/components/overlays';
 import { Badge, Button, Card, CardHeader, CategoryIcon, Text } from '@/components/ui';
 import { useSession } from '@/features/auth/sessionStore';
-import { flushCloudSync, hasUnsavedChanges } from '@/features/sync/cloudSync';
+import { discardUnsavedChanges, flushCloudSync } from '@/features/sync/cloudSync';
 import { signOut } from '@/lib/data/authRepository';
 import { useTheme } from '@/theme';
 
@@ -15,8 +15,10 @@ export function AccountCard({ index }: { index: number }) {
   const { status, email } = useSession();
   const [busy, setBusy] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
-  const finish = async () => {
+  const finish = async (discard = false) => {
     setBusy(true);
+    // Chosen on purpose: the unsaved changes are not kept for the next sign-in either.
+    if (discard) discardUnsavedChanges();
     await signOut();
     useSession.getState().setSignedOut();
     setBusy(false);
@@ -26,8 +28,7 @@ export function AccountCard({ index }: { index: number }) {
   const leave = async () => {
     setBusy(true);
     // Send any change still waiting before the session ends.
-    await flushCloudSync();
-    if (hasUnsavedChanges()) {
+    if (!(await flushCloudSync())) {
       // Offline or the server is busy: signing out now would lose them.
       setBusy(false);
       setUnsaved(true);
@@ -65,7 +66,7 @@ export function AccountCard({ index }: { index: number }) {
             confirmLabel="Sign out anyway"
             destructive
             busy={busy}
-            onConfirm={() => void finish()}
+            onConfirm={() => void finish(true)}
             onCancel={() => setUnsaved(false)}
           />
         </>

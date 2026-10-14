@@ -27,6 +27,8 @@ This page lists what is set up on the Supabase side and how to manage it. Connec
 | `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                          |
 | `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                     |
 | `employers`, `payslips`, `pf_entries`               | 0016                | Salary & PF (payslips across employers, the PF passbook)   |
+| `reset_data(scope)`                                 | 0018                | Settings → Reset data                                      |
+| `sync_ledger_v2(jsonb)` (conflict checks)           | 0020                | Saving without overwriting newer data from another device  |
 
 `internal` (allowlist, hook, helpers) is not exposed through the Data API, so none of it is
 reachable from the browser.
@@ -34,7 +36,7 @@ reachable from the browser.
 ## One-time setup checklist
 
 1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
-   `202610080004_foundation.sql` to `202610180018_reset_data.sql` (SQL Editor → paste →
+   `202610080004_foundation.sql` to `202610190020_sync_conflicts.sql` (SQL Editor → paste →
    Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
    function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
@@ -248,6 +250,19 @@ expense entries (or everything in Expenses), mutual funds or stocks in one trans
 the signed-in user, so Row Level Security and the two-step sign-in still apply, and the audit log
 records each deleted row. Run it after 0017; safe to run again. Without it, the app says the reset
 needs this migration and deletes nothing.
+
+## Conflict checks when saving (migration 0020)
+
+`202610190020_sync_conflicts.sql` adds `sync_ledger_v2(changes)`, which the app now uses to save.
+It takes the same changes as `sync_ledger`, with the same limits and rules (it runs as the
+signed-in user, so Row Level Security and two-step sign-in apply), and adds one check: each row
+the app believes already exists carries the `updated_at` the app last saw. If the row was changed
+since (on another device or tab) or deleted, that row is skipped (never re-inserted) and returned
+under `conflicts`; the app then shows the newer version and says so. New rows and deletes work as
+before. `sync_ledger` keeps its signature and now runs the same code. Run it after 0018; safe to
+run again. Without it the app falls back to `sync_ledger` by itself (no conflict checks; the last
+save of a row wins). Tests: `supabase/tests/sync_conflicts.sql` (run with `psql -f` on a database
+built by `fresh_install.sh`).
 
 ## Bringing in existing funds and shares
 

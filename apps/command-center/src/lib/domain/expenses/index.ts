@@ -17,3 +17,4 @@ export * from './sheetImport';
 export * from './sheetImportGuess';
 export * from './sheetImportPlan';
 export * from './sheetImportUndo';
+export * from './categoryUndo';

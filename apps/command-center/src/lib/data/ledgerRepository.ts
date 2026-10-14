@@ -7,6 +7,13 @@ import { portfolioChanges, portfolioFromRemote, type RemotePortfolio } from './p
 import { receiptPhoto, receiptRow } from './receiptRows';
 import { extrasChanges, extrasFromRemote, type ExtraKey, type Extras } from './extrasRows';
 import { callRpc } from './rpc';
+import {
+  isMissingFunction,
+  parseSaveResult,
+  versionsFromRemote,
+  type SaveResult,
+  type Versions,
+} from './saveResult';
 
 /** Everything the app keeps in the cloud for one user. */
 export type CloudData = Extras & {
@@ -19,6 +26,8 @@ export type CloudData = Extras & {
   portfolio: Portfolio;
   /** Notes keep reminders and Recently deleted (migration 0015). */
   noteExtras?: boolean;
+  /** Set by `loadCloudData` only: the `updated_at` of each loaded row. */
+  versions?: Versions;
 };
 
 type InvestmentKey = 'mf_funds' | 'mf_sips' | 'mf_transactions' | 'stocks' | 'stock_trades';
@@ -167,9 +176,28 @@ export function buildChanges(previous: CloudData, next: CloudData): LedgerChange
 }
 
 export async function loadCloudData(): Promise<CloudData> {
-  return fromRemote(await callRpc<Raw>('load_ledger'));
+  const raw = await callRpc<Raw>('load_ledger');
+  return { ...fromRemote(raw), versions: versionsFromRemote(raw as Record<string, unknown>) };
 }
 
-export async function saveChanges(changes: LedgerChanges): Promise<void> {
-  await callRpc<null>('sync_ledger', { p_changes: changes });
+/** Set once the database answered that it has no `sync_ledger_v2` (migration 0020). */
+let legacySave = false;
+
+/**
+ * Saves one batch. With migration 0020 rows that changed or were deleted elsewhere are
+ * skipped and reported; without it the older `sync_ledger` saves everything as before.
+ */
+export async function saveChanges(
+  changes: LedgerChanges,
+  options: { keepalive?: boolean } = {},
+): Promise<SaveResult> {
+  if (!legacySave) {
+    try {
+      return parseSaveResult(await callRpc('sync_ledger_v2', { p_changes: changes }, options));
+    } catch (error) {
+      if (!isMissingFunction(error)) throw error;
+      legacySave = true;
+    }
+  }
+  return parseSaveResult(await callRpc<null>('sync_ledger', { p_changes: changes }, options));
 }
