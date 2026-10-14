@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { comparisonLabel } from '@/features/expenses/format';
 import { useLedger } from '@/features/expenses/hooks/useLedger';
 import { useFundsView, useStocksView } from '@/features/investments/hooks/useInvestments';
+import { usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { useSalaryStore } from '@/features/salary/state/salaryStore';
 import {
@@ -16,7 +17,7 @@ import {
   monthOf,
   percentChange,
   periodTotals,
-  sortAccounts,
+  netWorthAccounts,
   todayIso,
 } from '@/lib/domain/expenses';
 import { pfBalance } from '@/lib/domain/salary';
@@ -34,8 +35,11 @@ export function useOverviewData() {
   const pfEntries = useSalaryStore((state) => state.pfEntries);
   const payslips = useSalaryStore((state) => state.payslips);
   const rules = useRecurringStore((state) => state.rules);
+  const tracksFunds = usePortfolioStore((state) => state.funds.length > 0);
+  const tracksStocks = usePortfolioStore((state) => state.stocks.length > 0);
   return useMemo(() => {
     const today = todayIso();
+    const tracking = { funds: tracksFunds, stocks: tracksStocks };
     const month = monthOf(today);
     const range = monthBounds(month);
     const totals = periodTotals(transactions, range);
@@ -45,16 +49,10 @@ export function useOverviewData() {
     const investmentIds = new Set(
       accounts.filter((account) => account.group === 'investment').map((account) => account.id),
     );
-    // Investment accounts record the money moved in (cost); their worth is the
-    // holdings' market value below, so they are left out here to avoid counting twice.
-    const everyday = sortAccounts(accounts)
-      .filter((account) => !investmentIds.has(account.id))
-      .map((account) => ({ account, balance: balances.get(account.id) ?? 0 }));
-    // Credit cards stay out of net worth (you asked for it): what they are owed is shown
-    // as an insight instead.
-    const cash = everyday
-      .filter((item) => item.account.group !== 'card')
-      .reduce((sum, item) => sum + item.balance, 0);
+    // Savings & investments accounts count (PPF, FD), except fund and share accounts whose
+    // worth is the holdings' market value below. Credit cards stay out (you asked for it):
+    // what they are owed is shown as an insight instead.
+    const { shown, leftOut, cash } = netWorthAccounts(accounts, balances, tracking);
     const funds = fundsView.totals;
     const stocks = stocksView.totals;
     // Credited PF only (your share and the employer's); the pension share is not a balance.
@@ -87,7 +85,9 @@ export function useOverviewData() {
         rules,
         payslips,
       }),
-      accounts: everyday,
+      accounts: shown,
+      /** Accounts whose worth is counted as fund or share value instead. */
+      leftOut: leftOut.map((account) => account.name),
       flow: monthlySeries(month, 8, transactions).map((item) => ({
         ...item,
         label: monthLabel(item.month, 'short'),
@@ -99,7 +99,18 @@ export function useOverviewData() {
       funds: { ...funds, series: held(fundsView.series.value) },
       stocks: { ...stocks, series: held(stocksView.series.value) },
     };
-  }, [accounts, categories, transactions, fundsView, stocksView, pfEntries, payslips, rules]);
+  }, [
+    accounts,
+    categories,
+    transactions,
+    fundsView,
+    stocksView,
+    pfEntries,
+    payslips,
+    rules,
+    tracksFunds,
+    tracksStocks,
+  ]);
 }
 
 /** Drops the months before anything was held, so the sparkline starts at the first value. */

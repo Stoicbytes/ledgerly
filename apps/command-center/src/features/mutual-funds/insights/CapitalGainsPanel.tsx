@@ -20,7 +20,7 @@ import { gainsCsv } from './gainsCsv';
 
 /**
  * Gains on redemptions per financial year, split the way the tax return asks (equity
- * short and long term, debt at slab or by holding period), from the units each sale
+ * short and long term, debt at slab or by holding period, gold and silver), from the units each sale
  * used (first in, first out). A guide for filing, not the tax itself.
  */
 export function CapitalGainsPanel() {
@@ -93,6 +93,13 @@ export function CapitalGainsPanel() {
           {equityLong ? (
             <Text variant="caption" color="textSecondary">
               {`Equity long-term gains up to ${formatMoneyWhole(equityLtcgExemption(fy))} a year are exempt, counted across all your equity funds and shares together.`}
+            </Text>
+          ) : null}
+          {own.some((line) => line.type.startsWith('gold')) ? (
+            <Text variant="caption" color="textSecondary">
+              Gold and silver funds sold from 1 April 2025 are long term after 24 months (12 for a
+              listed ETF), taxed at 12.5 %. Bought from April 2023 and sold before that: your slab
+              rate.
             </Text>
           ) : null}
           {own.some(grandfathered) ? (

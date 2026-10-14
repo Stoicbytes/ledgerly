@@ -14,7 +14,7 @@ export function alertText(alert: BudgetAlert): string {
     const used = alert.spent >= alert.budget ? 'all' : pct(alert);
     return `${name} has used ${used} of its ${money(alert.budget)} budget`;
   }
-  return `${name} is on course for ${money(alert.projected)} against a ${money(alert.budget)} budget`;
+  return `${name} is on course for about ${money(alert.projected)} against a ${money(alert.budget)} budget`;
 }
 
 /** The Overview insight for budget alerts (null when every budget is fine). */

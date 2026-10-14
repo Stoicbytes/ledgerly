@@ -5,11 +5,12 @@ import { Button, Money, Text } from '@/components/ui';
 import { useFundsView } from '@/features/investments/hooks/useInvestments';
 import { usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { useInteractionState } from '@/hooks/useInteractionState';
-import { dayLabel } from '@/lib/domain/expenses';
+import { dayLabel, todayIso } from '@/lib/domain/expenses';
 import { fromUnits4, sortFundTxns, yearlyCost, type FundTxn } from '@/lib/domain/investments';
 import { formatMoney, formatMoneyWhole, formatPercent } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
 import { PRICE_SOURCE_LABEL, SummaryGrid } from '@/features/investments/components/SummaryGrid';
+import { elssItems } from './elssItem';
 
 type Props = {
   fundId: string;
@@ -87,6 +88,7 @@ export function FundDetailSheet({
                 : undefined,
             },
             { label: 'Realised gain', money: position.realised + position.dividends, tone: 'auto' },
+            ...elssItems(fund, position.lots, todayIso()),
             ...(fund.expenseRatio != null
               ? [
                   {

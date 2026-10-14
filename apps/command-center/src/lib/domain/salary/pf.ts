@@ -107,13 +107,23 @@ export function pfYears(entries: readonly PfEntry[]): PfYear[] {
   return years.reverse();
 }
 
+/** The month a contribution is deposited: the one after its wage month ("2026-05-01"). */
+const depositedOn = (entry: PfEntry) => {
+  if (entry.kind !== 'contribution') return entry.date;
+  const month = Number(entry.date.slice(5, 7));
+  const year = Number(entry.date.slice(0, 4)) + (month === 12 ? 1 : 0);
+  return `${year}-${String((month % 12) + 1).padStart(2, '0')}-01`;
+};
+
 /**
  * An estimate of a year's interest at `rate` percent, the way EPFO works it out: on the
- * balance at the end of each month (the balance on 1 April plus contributions for wage months
- * so far and any opening balance carried in, less withdrawals), at a twelfth of the yearly
- * rate, credited once at the year's end.
- * Rounded to the rupee. EPFO's own figure can differ slightly (when a contribution was
- * deposited, the exact rounding), so the credited amount is always entered from the passbook.
+ * balance at the end of each month, at a twelfth of the yearly rate, credited once at the
+ * year's end. The balance is the one on 1 April plus contributions, opening balances carried
+ * in, less withdrawals. A month's contribution is generally deposited in the following month,
+ * so it earns from then: April wages from May, and March wages nothing in the year they are
+ * for (they are in the next year's opening balance).
+ * Rounded to the rupee. An estimate: EPFO's own figure can differ (the actual deposit dates,
+ * the exact rounding), so the credited amount is always entered from the passbook.
  */
 export function estimateInterest(entries: readonly PfEntry[], fy: string, rate: number): number {
   const start = fyStartYear(fy);
@@ -126,7 +136,8 @@ export function estimateInterest(entries: readonly PfEntry[], fy: string, rate: 
     let balance = opening;
     for (const entry of entries) {
       if (entry.kind === 'interest') continue;
-      if (entry.date <= `${start}-03-31` || entry.date > monthEnd) continue;
+      // Entries dated up to 31 March are in the opening balance already.
+      if (entry.date <= `${start}-03-31` || depositedOn(entry) > monthEnd) continue;
       const amount = entry.employee + entry.vpf + entry.employer;
       balance += entry.kind === 'withdrawal' ? -amount : amount;
     }

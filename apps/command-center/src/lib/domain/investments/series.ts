@@ -1,8 +1,8 @@
 import { addMonths, monthBounds, monthOf } from '../expenses/dates';
 import { navOn, replayFund, sortFundTxns } from './funds';
 import { unitsValue } from './math';
-import { fundRows, stockRows, type StockRow } from './portfolio';
-import { replayStock, sortTrades } from './stocks';
+import { allFundRows, allStockRows, type StockRow } from './portfolio';
+import { lastTradePrice, replayStock, sortTrades } from './stocks';
 import type { MarketData, Portfolio, Series } from './types';
 
 const lastOnOrBefore = (points: Series | undefined, date: string) => {
@@ -31,7 +31,7 @@ export function fundValueSeries(
   today: string,
   months: number | 'all' = 12,
 ): ValueSeries {
-  const rows = fundRows(portfolio, market, today);
+  const rows = allFundRows(portfolio, market, today);
   const first = sortFundTxns(portfolio.fundTxns)[0]?.date ?? null;
   const list = monthEnds(first, today, months);
   const invested: number[] = [];
@@ -69,7 +69,7 @@ export function stockValueSeries(
   today: string,
   months: number | 'all' = 12,
 ): ValueSeries {
-  const rows = stockRows(portfolio, market, today);
+  const rows = allStockRows(portfolio, market, today);
   const first = sortTrades(portfolio.trades)[0]?.date ?? null;
   const list = monthEnds(first, today, months);
   const invested: number[] = [];
@@ -86,9 +86,7 @@ export function stockValueSeries(
       }
       const held = replayStock(row.trades, end);
       if (!held.quantity) continue;
-      const lastPrice = sortTrades(
-        row.trades.filter((trade) => trade.price && trade.date <= end),
-      ).pop()?.price;
+      const lastPrice = lastTradePrice(row.trades, end)?.price;
       const price =
         lastOnOrBefore(row.stock.isin ? market.priceHistory[row.stock.isin] : undefined, end) ??
         lastPrice ??

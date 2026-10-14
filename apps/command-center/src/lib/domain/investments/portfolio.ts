@@ -49,8 +49,11 @@ const groupBy = <T>(items: T[], key: (item: T) => string) => {
   return map;
 };
 
-/** One row per fund that is not archived (or still has units), largest first. */
-export function fundRows(portfolio: Portfolio, market: MarketData, today: string): FundRow[] {
+/**
+ * One row per fund, archived ones included, largest first. Totals (realised gains, XIRR)
+ * use every row, so archiving a sold fund keeps its history; the list uses `fundRows`.
+ */
+export function allFundRows(portfolio: Portfolio, market: MarketData, today: string): FundRow[] {
   const byFund = groupBy(portfolio.fundTxns, (txn) => txn.fundId);
   return portfolio.funds
     .map((fund) => {
@@ -72,11 +75,18 @@ export function fundRows(portfolio: Portfolio, market: MarketData, today: string
         categoryLabel: fundCategoryLabel(fund.category),
       };
     })
-    .filter((row) => !row.fund.archived || row.position.units4 > 0)
     .sort((a, b) => b.position.value - a.position.value || a.fund.order - b.fund.order);
 }
 
-export function stockRows(portfolio: Portfolio, market: MarketData, today: string): StockRow[] {
+/** The funds listed: not archived, or archived but still holding units. */
+export const shownFundRows = (rows: FundRow[]) =>
+  rows.filter((row) => !row.fund.archived || row.position.units4 > 0);
+
+export const fundRows = (portfolio: Portfolio, market: MarketData, today: string) =>
+  shownFundRows(allFundRows(portfolio, market, today));
+
+/** One row per stock, archived ones included (see allFundRows). */
+export function allStockRows(portfolio: Portfolio, market: MarketData, today: string): StockRow[] {
   const byStock = groupBy(portfolio.trades, (trade) => trade.stockId);
   return portfolio.stocks
     .map((stock) => {
@@ -95,9 +105,15 @@ export function stockRows(portfolio: Portfolio, market: MarketData, today: strin
             : 0,
       };
     })
-    .filter((row) => !row.stock.archived || row.position.quantity > 0)
     .sort((a, b) => b.position.value - a.position.value || a.stock.order - b.stock.order);
 }
+
+/** The stocks listed: not archived, or archived but still holding shares. */
+export const shownStockRows = (rows: StockRow[]) =>
+  rows.filter((row) => !row.stock.archived || row.position.quantity > 0);
+
+export const stockRows = (portfolio: Portfolio, market: MarketData, today: string) =>
+  shownStockRows(allStockRows(portfolio, market, today));
 
 type Positioned = { position: FundPosition | StockPosition; dayChange?: number };
 

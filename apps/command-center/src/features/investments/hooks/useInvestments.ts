@@ -2,13 +2,15 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { todayIso } from '@/lib/domain/expenses';
 import {
+  allFundRows,
+  allStockRows,
   allocation,
-  fundRows,
+  shownFundRows,
+  shownStockRows,
   fundTotals,
   fundValueSeries,
   monthlySipTotal,
   pendingSipInstalments,
-  stockRows,
   stockTotals,
   stockValueSeries,
   upcomingSips,
@@ -36,11 +38,13 @@ export function useFundsView(range: number | 'all' = 12) {
   const market = useMarketStore((state) => state.market);
   const today = todayIso();
   return useMemo(() => {
-    const rows = fundRows(portfolio, market, today);
+    // Archived, sold funds stay in the totals (realised gains, XIRR) but not in the list.
+    const all = allFundRows(portfolio, market, today);
+    const rows = shownFundRows(all);
     const active = portfolio.sips.filter((sip) => rows.some((row) => row.fund.id === sip.fundId));
     return {
       rows,
-      totals: fundTotals(rows, today),
+      totals: fundTotals(all, today),
       allocation: allocation(
         rows.map((row) => ({ label: row.assetClass, value: row.position.value })),
       ),
@@ -61,11 +65,12 @@ export function useStocksView(range: number | 'all' = 12) {
   const market = useMarketStore((state) => state.market);
   const today = todayIso();
   return useMemo(() => {
-    const rows = stockRows(portfolio, market, today);
+    const all = allStockRows(portfolio, market, today);
+    const rows = shownStockRows(all);
     const held = rows.filter((row) => row.position.quantity > 0);
     return {
       rows,
-      totals: stockTotals(rows, today),
+      totals: stockTotals(all, today),
       sectors: allocation(
         held.map((row) => ({ label: row.stock.sector || 'Other', value: row.position.value })),
       ),
