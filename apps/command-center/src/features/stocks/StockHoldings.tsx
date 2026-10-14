@@ -92,6 +92,9 @@ export function StockHoldings({
                   </Text>
                   <Text variant="caption" color="textSecondary" numberOfLines={1}>
                     {stock.symbol} · {position.quantity ? stock.sector || stock.exchange : 'Sold'}
+                    {position.quantity && quote?.source === 'last entry'
+                      ? ' · estimated value'
+                      : ''}
                   </Text>
                 </View>
               </View>

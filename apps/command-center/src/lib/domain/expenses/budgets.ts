@@ -1,6 +1,7 @@
 import { categoryBreakdown } from './breakdowns';
 import { topLevelCategories } from './categories';
 import { monthBounds } from './dates';
+import { projectMonthEnd } from './projection';
 import type { Category, Transaction } from './types';
 
 export type BudgetLine = {
@@ -62,7 +63,10 @@ export type BudgetAlert = {
   level: 'over' | 'near' | 'pace';
   spent: number;
   budget: number;
-  /** Month-end spending at this month's daily rate. */
+  /**
+   * About what the month will come to: spent so far plus what the rest of a month usually
+   * costs in this category (see projectMonthEnd); what is spent so far without earlier months.
+   */
   projected: number;
 };
 
@@ -70,7 +74,8 @@ const ALERT_ORDER = { over: 0, near: 1, pace: 2 } as const;
 
 /**
  * Budgets that need attention this month (as of `today`), most urgent first. "On course"
- * needs a week of the month, so one early purchase does not raise an alarm.
+ * needs a week of the month and earlier months to compare with, so one early purchase
+ * (rent on the 1st) does not raise an alarm.
  */
 export function budgetAlerts(
   categories: Category[],
@@ -79,18 +84,23 @@ export function budgetAlerts(
 ): BudgetAlert[] {
   const month = today.slice(0, 7);
   const day = Number(today.slice(8, 10));
-  const days = new Date(
-    Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0),
-  ).getUTCDate();
   const alerts: BudgetAlert[] = [];
   for (const line of budgetStatus(categories, transactions, month).lines) {
-    const projected = Math.round((line.spent / Math.max(day, 1)) * days);
+    const projection = projectMonthEnd(
+      transactions,
+      today,
+      (range) =>
+        categoryBreakdown(transactions, categories, 'expense', range).find(
+          (slice) => slice.id === line.category.id,
+        )?.amount ?? 0,
+    );
+    const projected = projection?.projected ?? line.spent;
     const level =
       line.spent > line.budget
         ? 'over'
         : line.ratio >= 0.8
           ? 'near'
-          : day >= 7 && projected > line.budget
+          : day >= 7 && projection && projected > line.budget
             ? 'pace'
             : null;
     if (level) {

@@ -13,7 +13,10 @@ is calculated. Server setup (migrations 0007 and 0009, the price function and it
   house come from AMFI, and its NAV is updated automatically.
 - **By hand**: type the name, pick a type (Equity, Debt, Hybrid, Index & ETF, Gold & silver,
   Other) and, if you like, a NAV with its date. Use this for funds not in the list.
-- Folio number and notes are optional. **Archive** hides a fund once it has no units left.
+- Folio number and notes are optional. **Archive** hides a fund once it has no units left; its
+  realised gain and cash flows stay in the page totals and overall XIRR (the same for stocks).
+- **ELSS** funds show the units still in their three-year lock-in (counted from each purchase,
+  SIP instalments included) and the day the last of them is free.
 
 **Record transactions**: open a fund → **Add transaction**.
 
@@ -42,9 +45,15 @@ ten years of it at a yearly return you type (not saved).
 - **Capital gains**: every redemption split over the purchases it used (first in, first out),
   by financial year (April–March), as the tax return groups them: equity short term (12 months
   or less) and long term; debt bought from 1 April 2023 at your slab rate; older debt short or
-  long term (24 months, or 36 for sales before 23 July 2024); hybrid, index and other funds
-  listed **to check**, since that depends on how much of the fund is in Indian shares. It notes
-  the yearly equity long-term exemption (₹1.25 lakh from FY 2024-25, ₹1 lakh before) and
+  long term (24 months, or 36 for sales before 23 July 2024). **Gold and silver** funds (and
+  gold or silver fund of funds): bought from 1 April 2023 and sold before 1 April 2025, slab
+  rate; sold from 1 April 2025 (Finance Act 2025: only funds with more than 65 % in debt are
+  "specified"), long term (12.5 %) after 24 months, or 12 for a listed ETF (the name or category
+  says ETF); a fund held 12–24 months that is not recognised as an ETF is marked "check if
+  listed ETF". Bought before April 2023: 36 months for sales before 23 July 2024, then 24 (12 if
+  listed). Hybrid, index, international and other funds are listed **to check**, since that
+  depends on how much of the fund is in Indian shares or debt. It notes the yearly equity
+  long-term exemption (₹1.25 lakh for FY 2024-25 onwards, the whole year; ₹1 lakh before) and
   units bought before 1 February 2018 (grandfathering). **Export** gives a CSV for your CA. It
   classifies gains; it does not compute tax. Check your CAMS/KFintech capital gains statement
   before filing.
@@ -75,6 +84,11 @@ chart. A price entered by hand (with its date) is used when there is no newer cl
 
 Bonus issues and splits apply to the shares held before that day; whole shares only (fractions
 are paid in cash and rounded down). ETFs and listed bonds can be tracked as stocks.
+
+Without an exchange or manual price, a stock is valued at its last trade price adjusted for later
+splits and bonuses (₹1,000 before a 1 → 5 split and a 1 : 1 bonus counts as ₹100), and marked
+**estimated (no market price)**. Realised gains are after charges; charges include STT, which tax
+rules do not allow as a deduction, so check your broker's P&L statement before filing.
 
 ## Shares against an index
 
@@ -169,7 +183,8 @@ layout is read today.
   and today's value add up to zero, taking each date into account. It suits SIPs, where money goes
   in at different times. It is shown once the first money went in at least a year ago: before
   that, annualising blows small moves up (2 % in a month would read as 27 % a year), so younger
-  holdings show only their gain on cost (as fund statements do).
+  holdings show only their gain on cost (as fund statements do). Flows all on one day (bought and
+  sold the same day) have no annualised figure: XIRR shows —.
 - **Day change** = holdings × (latest price − previous price), from AMFI history or the exchange's
   previous close.
 - **Allocation** groups funds by AMFI category (Equity, Debt, Hybrid, Index & ETF, Gold & silver,

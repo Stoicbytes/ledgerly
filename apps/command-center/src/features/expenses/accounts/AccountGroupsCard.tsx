@@ -59,11 +59,12 @@ export function AccountGroupsCard({
                 {formatMoneyWhole(total)}
               </Text>
             </View>
-            {items.map(({ account, balance }) => (
+            {items.map(({ account, balance, leftOut }) => (
               <AccountRow
                 key={account.id}
                 account={account}
                 balance={balance}
+                leftOut={leftOut}
                 selected={account.id === selectedId}
                 onPress={() => onSelect(account.id)}
               />
@@ -78,11 +79,12 @@ export function AccountGroupsCard({
 type AccountRowProps = {
   account: Account;
   balance: number;
+  leftOut: boolean;
   selected: boolean;
   onPress: () => void;
 };
 
-function AccountRow({ account, balance, selected, onPress }: AccountRowProps) {
+function AccountRow({ account, balance, leftOut, selected, onPress }: AccountRowProps) {
   const theme = useTheme();
   const { hovered, focused, handlers } = useInteractionState();
   return (
@@ -109,9 +111,16 @@ function AccountRow({ account, balance, selected, onPress }: AccountRowProps) {
         tint={accountGroupTints[account.group]}
         size={38}
       />
-      <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
-        {account.name}
-      </Text>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text variant="bodyStrong" numberOfLines={1}>
+          {account.name}
+        </Text>
+        {leftOut ? (
+          <Text variant="caption" color="textTertiary" numberOfLines={2}>
+            Not in net worth: valued on Investments
+          </Text>
+        ) : null}
+      </View>
       <Money
         value={balance}
         whole

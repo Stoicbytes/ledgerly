@@ -16,23 +16,16 @@ type FormatOptions = {
 
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
-function formatter(
-  locale: string,
-  currency: string,
-  compact: boolean,
-  whole = false,
-): Intl.NumberFormat {
-  const key = `${locale}|${currency}|${compact}|${whole}`;
+function formatter(locale: string, currency: string, whole = false): Intl.NumberFormat {
+  const key = `${locale}|${currency}|${whole}`;
   let cached = formatterCache.get(key);
   if (!cached) {
     cached = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
-      ...(compact
-        ? { notation: 'compact', maximumFractionDigits: 1 }
-        : whole
-          ? { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-          : { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      ...(whole
+        ? { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+        : { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     });
     formatterCache.set(key, cached);
   }
@@ -45,7 +38,11 @@ export function assertMinorUnits(value: number): void {
   }
 }
 
-/** Formats e.g. 125050 → "₹1,250.50"; negative values use a true minus sign. */
+/**
+ * Formats e.g. 125050 → "₹1,250.50"; negative values use a true minus sign. Rounding (whole
+ * rupees, compact) goes half away from zero on both sides, and an amount that rounds to zero
+ * never shows a sign ("₹0", not "−₹0"). Compact rupees use Indian units (₹45K, ₹1.2L, ₹3Cr).
+ */
 export function formatMoney(minor: number, options: FormatOptions = {}): string {
   assertMinorUnits(minor);
   const {
@@ -55,8 +52,11 @@ export function formatMoney(minor: number, options: FormatOptions = {}): string 
     locale = 'en-IN',
     whole = false,
   } = options;
-  const magnitude = formatter(locale, currency, compact, whole).format(Math.abs(minor) / 100);
-  if (minor === 0 || signDisplay === 'never') return magnitude;
+  const magnitude =
+    compact && currency === 'INR'
+      ? compactRupees(Math.abs(minor))
+      : formatter(locale, currency, whole).format(Math.abs(minor) / 100);
+  if (!/[1-9]/.test(magnitude) || signDisplay === 'never') return magnitude;
   if (minor < 0) return `−${magnitude}`;
   return signDisplay === 'always' ? `+${magnitude}` : magnitude;
 }
@@ -77,20 +77,36 @@ export function formatPercent(value: number, fractionDigits = 1): string {
   return magnitude;
 }
 
-/** Compact rupee label for chart axes in Indian units: ₹950 · ₹45K · ₹1.2L · ₹3Cr. */
-export function formatAxisMoney(minor: number): string {
-  const rupees = Math.abs(minor) / 100;
-  const sign = minor < 0 ? '−' : '';
-  const trim = (value: number) =>
-    value >= 10 ? Math.round(value).toString() : value.toFixed(1).replace(/\.0$/, '');
-  if (rupees >= 1e7) return `${sign}₹${trim(rupees / 1e7)}Cr`;
-  if (rupees >= 1e5) return `${sign}₹${trim(rupees / 1e5)}L`;
-  if (rupees >= 1e3) return `${sign}₹${trim(rupees / 1e3)}K`;
-  return `${sign}₹${Math.round(rupees)}`;
+const UNITS: [number, string][] = [
+  [1e7, 'Cr'],
+  [1e5, 'L'],
+  [1e3, 'K'],
+  [1, ''],
+];
+
+/**
+ * "₹99.9K", "₹1L", "₹3Cr" for a non-negative paise amount. The unit is chosen after
+ * rounding, so ₹99,999.99 reads "₹1L", not "₹100K".
+ */
+function compactRupees(paise: number): string {
+  const rupees = paise / 100;
+  let index = UNITS.findIndex(([size]) => rupees >= size);
+  if (index < 0) index = UNITS.length - 1;
+  const shown = (at: number) => {
+    const value = rupees / UNITS[at][0];
+    return at === UNITS.length - 1 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  };
+  while (index > 0 && shown(index) * UNITS[index][0] >= UNITS[index - 1][0]) index -= 1;
+  return `₹${shown(index)}${UNITS[index][1]}`;
 }
 
-/** Rounds to whole rupees for display in dense tables. */
+/** Compact rupee label for chart axes in Indian units: ₹950 · ₹45K · ₹1.2L · ₹3Cr. */
+export function formatAxisMoney(minor: number): string {
+  return formatMoney(minor, { compact: true });
+}
+
+/** Rounds to whole rupees (half away from zero) for display in dense tables. */
 export function formatMoneyWhole(minor: number, signDisplay: SignDisplay = 'auto'): string {
   assertMinorUnits(Math.round(minor));
-  return formatMoney(Math.round(minor / 100) * 100, { signDisplay }).replace(/\.00$/, '');
+  return formatMoney(Math.round(minor), { signDisplay, whole: true });
 }

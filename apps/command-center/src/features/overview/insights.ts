@@ -5,13 +5,13 @@ import {
   categoryBreakdown,
   comparisonRange,
   dayLabel,
-  daysInMonth,
   dueEntries,
   monthBounds,
   monthLabel,
   monthOf,
   ownShare,
   periodTotals,
+  projectMonthEnd,
   type Account,
   type Category,
   type RecurringEntry,
@@ -50,7 +50,8 @@ export const cardDue = (accounts: Account[], balances: Map<string, number>) =>
 
 /**
  * Rule-based insights for the home screen, most pressing first (at most `limit`). Every
- * figure comes from your own entries; nothing is predicted beyond simple arithmetic.
+ * figure comes from your own entries; nothing is predicted beyond simple arithmetic
+ * (the month-end figure is spent so far plus what the rest of a month usually costs).
  */
 export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
   const { today, transactions, categories, accounts, balances } = input;
@@ -99,13 +100,15 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
     }
   }
 
-  if (day >= 5 && now.expense > 0) {
-    const projected = Math.round((now.expense / day) * daysInMonth(month));
+  // Spent so far plus what the rest of a month usually costs, so rent on the 1st is not
+  // multiplied over the month.
+  const course = day >= 5 && now.expense > 0 ? projectMonthEnd(transactions, today) : null;
+  if (course) {
     items.push({
       id: 'projection',
       tone: 'info',
-      title: `On course to spend about ${money(projected)} in ${monthLabel(month, 'short')}`,
-      detail: `${money(Math.round(now.expense / day))} a day so far.`,
+      title: `On course to spend about ${money(course.projected)} in ${monthLabel(month, 'short')}`,
+      detail: `${money(course.spent)} so far; the rest of a month usually costs about ${money(course.rest)}.`,
     });
   }
 

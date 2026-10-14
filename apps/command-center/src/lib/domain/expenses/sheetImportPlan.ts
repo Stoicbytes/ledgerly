@@ -161,6 +161,12 @@ export function planSheetImport(
       continue;
     }
     const toAccountId = row.kind === 'transfer' ? accountFor(row.toAccount) : null;
+    // "HDFC" and "HDFC 💳" are one account once emoji are left out: the database refuses a
+    // transfer to itself (and would refuse the whole import with it).
+    if (toAccountId === accountId) {
+      plan.skipped.push({ line: row.line, reason: SKIP_REASONS.sameAccount });
+      continue;
+    }
     const kind = row.kind;
     const match = entryKey({ ...row, kind, accountId, toAccountId });
     const left = existing.get(match) ?? 0;

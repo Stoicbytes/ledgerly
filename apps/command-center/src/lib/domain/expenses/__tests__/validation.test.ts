@@ -128,7 +128,7 @@ describe('validateDraft', () => {
         amountText: '0',
         categoryId: 'salary',
         accountId: 'nope',
-        note: 'x'.repeat(121),
+        note: 'x'.repeat(501),
       }),
       context,
     );
