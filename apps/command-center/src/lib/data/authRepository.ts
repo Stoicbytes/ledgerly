@@ -42,6 +42,21 @@ function passwordResetUrl(): string {
   return Linking.createURL('/reset-password');
 }
 
+/**
+ * Phone apps: exchanges the one-time code of an emailed link (reset, email change) for a
+ * session. Only works on the device that asked for the link (PKCE). True when it worked.
+ */
+export async function exchangeAuthCode(code: string): Promise<boolean> {
+  const auth = getAuth();
+  if (!auth) return false;
+  try {
+    const { error } = await auth.exchangeCodeForSession(code);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 /** Always reports success when the request was sent, so it never reveals which emails exist. */
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const auth = getAuth();
