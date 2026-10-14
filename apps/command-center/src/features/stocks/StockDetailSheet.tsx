@@ -113,6 +113,12 @@ export function StockDetailSheet({
             },
           ]}
         />
+        {position.realisedLots.length ? (
+          <Text variant="caption" color="textSecondary">
+            Realised gains here are after charges. Charges include STT, which tax rules don’t allow
+            as a deduction: check your broker’s P&L statement before filing.
+          </Text>
+        ) : null}
         <View style={{ gap: theme.space[2] }}>
           <Text variant="title">Trades</Text>
           {row.trades.length ? (

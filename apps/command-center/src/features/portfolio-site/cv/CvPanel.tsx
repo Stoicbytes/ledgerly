@@ -4,7 +4,8 @@ import { useToast } from '@/components/feedback';
 import { Download, FileText } from '@/components/icons';
 import { Button, Card, CardHeader, CategoryIcon, Text } from '@/components/ui';
 import { TextField } from '@/features/expenses/components/TextField';
-import { atsReport, buildCv, cvDocx, cvFileName, cvPdf } from '@/lib/domain/cv';
+import { atsReport } from '@/lib/domain/cv/ats';
+import { buildCv, cvFileName } from '@/lib/domain/cv/build';
 import { canSaveBytes, saveBytes } from '@/lib/files/saveBytes';
 import { useTheme } from '@/theme';
 import { useSiteStore } from '../state/siteStore';
@@ -35,7 +36,11 @@ export function CvPanel() {
 
   const download = async (kind: 'pdf' | 'docx') => {
     try {
-      const bytes = kind === 'pdf' ? cvPdf(cv) : cvDocx(cv);
+      // The PDF and Word writers load only when a download is asked for.
+      const bytes =
+        kind === 'pdf'
+          ? (await import('@/lib/domain/cv/pdf')).cvPdf(cv)
+          : (await import('@/lib/domain/cv/docx')).cvDocx(cv);
       await saveBytes(bytes, cvFileName(cv, kind), kind === 'pdf' ? 'application/pdf' : DOCX);
     } catch {
       toast.show({ message: 'The CV could not be saved. Try again.' });

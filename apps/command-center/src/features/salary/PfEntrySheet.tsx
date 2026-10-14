@@ -129,9 +129,11 @@ export function PfEntrySheet({
             {estimate ? (
               <View style={{ gap: theme.space[2] }}>
                 <Text variant="caption" color="textSecondary">
-                  Estimate at {rate} %: {formatMoney(estimate.employee + estimate.employer)} (yours{' '}
-                  {formatMoney(estimate.employee)}, employer {formatMoney(estimate.employer)}).
-                  EPFO’s figure may differ slightly; the passbook is the record.
+                  Estimate at {rate} %, check your passbook:{' '}
+                  {formatMoney(estimate.employee + estimate.employer)} (yours{' '}
+                  {formatMoney(estimate.employee)}, employer {formatMoney(estimate.employer)}). Each
+                  month’s contribution counts from the month after, when it is deposited; EPFO’s
+                  figure can differ and the passbook is the record.
                 </Text>
                 <Button
                   label="Use the estimate"

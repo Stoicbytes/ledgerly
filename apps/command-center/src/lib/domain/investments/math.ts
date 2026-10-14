@@ -44,7 +44,8 @@ export function annualisedReturn(flows: CashFlow[], asOf: string): number | null
 /**
  * Annualised internal rate of return for irregular cash flows (XIRR), as a fraction
  * (0.12 = 12 %). Money paid in is negative, money out (and today's value) positive.
- * Returns null when it is not defined: no inflow or no outflow, or no solution.
+ * Returns null when it is not defined: no inflow or no outflow, every flow on one day (no
+ * time to annualise over), or no solution.
  */
 export function xirr(flows: CashFlow[]): number | null {
   const items = flows.filter((flow) => flow.amount !== 0);
@@ -53,6 +54,7 @@ export function xirr(flows: CashFlow[]): number | null {
   }
   const start = items.reduce((min, flow) => (flow.date < min ? flow.date : min), items[0].date);
   const years = items.map((flow) => daysBetween(start, flow.date) / 365);
+  if (years.every((year) => year === 0)) return null;
   const npv = (rate: number) =>
     items.reduce((sum, flow, index) => sum + flow.amount / (1 + rate) ** years[index], 0);
   const slope = (rate: number) =>

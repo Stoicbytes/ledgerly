@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useSyncStatus } from '@/features/sync/syncStatus';
-import { planSheetImport, readExpenseSheet } from '@/lib/domain/expenses';
+import { planSheetImport, readExpenseSheet } from '@/lib/domain/expenses/sheetImports';
 import { renderWithProviders } from '@/test/render';
 import { SheetImportCard } from '../SheetImportCard';
 import { lastImportOf, readLastImport, saveLastImport, undoLastImport } from '../lastImport';

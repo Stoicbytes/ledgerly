@@ -2,17 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { pickFiles } from '@/features/investments/import/pickFiles';
+import { flushCloudSync } from '@/features/sync/cloudSync';
+import { isCloudActive, useSyncStatus } from '@/features/sync/syncStatus';
+import { withoutImported } from '@/lib/domain/expenses';
 import {
   planSheetImport,
   readExpenseSheet,
-  withoutImported,
   type SheetImportPlan,
   type SheetRead,
-} from '@/lib/domain/expenses';
-import { readCsvRows } from '@/lib/files/csv';
-import { inflateRaw } from '@/lib/files/inflate';
-import { readXlsxRows } from '@/lib/files/xlsx';
-import { FileFormatError } from '@/lib/files/zip';
+} from '@/lib/domain/expenses/sheetImports';
 import { newId } from '@/lib/ids';
 import {
   clearLastImport,
@@ -28,7 +26,15 @@ export type SheetImportState =
   | { phase: 'choose'; problem: string | null }
   | { phase: 'reading' }
   | { phase: 'review'; file: string; read: SheetRead; plan: SheetImportPlan }
-  | { phase: 'done'; imported: SheetImportPlan };
+  | { phase: 'done'; imported: SheetImportPlan; save: ImportSave };
+
+/**
+ * Signed in, an import is done only once the database confirms it: `saving` until then,
+ * `saved`, or `notSaved` with how many entries did not make it (refused, or still waiting
+ * to be sent). `preview`: nothing is saved.
+ */
+export type ImportSave =
+  { state: 'preview' | 'saving' | 'saved' } | { state: 'notSaved'; refused: number };
 
 export const TOO_LARGE = 'The file is larger than 5 MB. Export a shorter period and import each.';
 
@@ -37,15 +43,10 @@ export async function readSheet(name: string, bytes: Uint8Array): Promise<SheetR
     const problem = 'This is an old .xls file. Open it and save it as .xlsx or .csv first.';
     return { rows: [], skipped: [], problems: [problem] };
   }
-  try {
-    const rows = /\.csv$/i.test(name)
-      ? readCsvRows(new TextDecoder().decode(bytes))
-      : await readXlsxRows(bytes, inflateRaw);
-    return readExpenseSheet(rows);
-  } catch (error) {
-    const reason = error instanceof FileFormatError ? error.message : 'It could not be read.';
-    return { rows: [], skipped: [], problems: [reason] };
-  }
+  const { readSpreadsheet } = await import('@/lib/files/spreadsheet');
+  const read = await readSpreadsheet(name, bytes);
+  if ('problem' in read) return { rows: [], skipped: [], problems: [read.problem] };
+  return readExpenseSheet(read.rows);
 }
 
 /**
@@ -102,19 +103,31 @@ export function useSheetImport(ready = false) {
     });
   }, []);
 
-  const approve = useCallback(() => {
+  const approve = useCallback(async () => {
     if (state.phase !== 'review' || busy.current) return;
     busy.current = true;
     const plan = planSheetImport(state.read, getLedger(), newId);
     useExpenseStore.getState().addImported(plan);
-    busy.current = false;
     setNotice(null);
-    setState({ phase: 'done', imported: plan });
     if (key.current && plan.transactions.length) {
       const saved = lastImportOf(plan);
       void saveLastImport(key.current, saved);
       setLast(saved);
     }
+    const cloud = isCloudActive(useSyncStatus.getState().status);
+    setState({ phase: 'done', imported: plan, save: { state: cloud ? 'saving' : 'preview' } });
+    if (cloud) {
+      const allSent = await flushCloudSync();
+      // Entries the database refused are taken out again (and named in a notice).
+      const kept = new Set(getLedger().transactions.map((item) => item.id));
+      const refused = plan.transactions.filter((item) => !kept.has(item.id)).length;
+      const save: ImportSave =
+        allSent && !refused ? { state: 'saved' } : { state: 'notSaved', refused };
+      setState((current) =>
+        current.phase === 'done' && current.imported === plan ? { ...current, save } : current,
+      );
+    }
+    busy.current = false;
   }, [state]);
 
   const undo = useCallback(() => {

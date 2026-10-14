@@ -8,7 +8,8 @@ import type { Account, Category, Person, Split, Transaction, TransactionKind } f
 
 /** ₹100 crore in paise — a sanity ceiling for a personal ledger. */
 export const MAX_AMOUNT = 100_000_000_000;
-export const MAX_NOTE_LENGTH = 120;
+/** The database's limit for entry and recurring-entry notes (migrations 0005 and 0012). */
+export const MAX_NOTE_LENGTH = 500;
 export const MAX_NAME_LENGTH = 30;
 /** The database keeps dates between these years. */
 const FIRST_DATE = '1900-01-01';

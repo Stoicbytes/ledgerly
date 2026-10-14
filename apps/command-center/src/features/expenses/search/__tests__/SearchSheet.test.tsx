@@ -9,6 +9,9 @@ import { useSearchStore } from '../../state/searchStore';
 import { periodRange } from '../SearchFilterChips';
 import { SearchSheet } from '../SearchSheet';
 
+/** The search runs once typing pauses (150 ms). */
+const typingPause = () => act(() => new Promise((resolve) => setTimeout(resolve, 200)));
+
 jest.mock('@/lib/files/saveTextFile', () => ({ saveTextFile: jest.fn(async () => undefined) }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
@@ -27,6 +30,7 @@ describe('SearchSheet', () => {
     });
     await renderWithProviders(<SearchSheet />);
     await fireEvent.changeText(screen.getByLabelText('Search'), 'passport');
+    await typingPause();
     expect(screen.getByText('Notes')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: /^Passport renewal/ }));
     expect(router.push).toHaveBeenCalledWith('/dashboard/notes');
@@ -37,8 +41,10 @@ describe('SearchSheet', () => {
     await renderWithProviders(<SearchSheet />);
     expect(screen.getByText('Search Ledgerly')).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('Search'), 'tea');
+    await typingPause();
     expect(screen.getByText('2 entries · spent ₹90 · received ₹0')).toBeTruthy();
     await fireEvent.changeText(screen.getByLabelText('Search'), 'nothing-like-this');
+    await typingPause();
     expect(screen.getByText('No entries found')).toBeTruthy();
   });
 
@@ -58,6 +64,7 @@ describe('SearchSheet', () => {
     expect(csv.trim().split('\r\n')).toHaveLength(transactions.length + 1);
     expect(name).toMatch(/^expenses-\d{4}-\d{2}-\d{2}\.csv$/);
     await fireEvent.changeText(screen.getByLabelText('Search'), 'lunch');
+    await typingPause();
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Export results' }));
     });

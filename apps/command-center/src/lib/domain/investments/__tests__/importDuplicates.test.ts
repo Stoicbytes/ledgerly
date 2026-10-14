@@ -1,4 +1,4 @@
-import { defaultSelection, planImport, selectionCheck, selectTrades } from '..';
+import { defaultSelection, planImport, selectionCheck, selectTrades } from '../tradebookImport';
 import type { TradebookTrade } from '../tradebook';
 import { EMPTY_PORTFOLIO, type Portfolio } from '../types';
 import { stock, trade } from '../__fixtures__';

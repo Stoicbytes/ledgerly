@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Badge, Text } from '@/components/ui';
 import { SwitchRow } from '@/features/investments/components/SwitchRow';
-import type { HoldingPlan } from '@/lib/domain/investments';
+import type { HoldingPlan } from '@/lib/domain/investments/tradebookImport';
 import { formatMoney } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
 import { quantityText, TradeHeading, TradeRow } from './ImportTradeRow';

@@ -31,14 +31,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let active = true;
     let latest = 0;
     // A password-only session of an account with two-step sign-in still owes its code.
-    const signedIn = (user: { email?: string; user_metadata?: unknown }) => {
+    const signedIn = (user: { id?: string; email?: string; user_metadata?: unknown }) => {
       const run = ++latest;
       const email = user.email ?? null;
       const name = displayNameOf(user);
       void needsSecondStep().then((needsCode) => {
         if (!active || run !== latest) return;
         if (needsCode) session.setNeedsCode(email, name);
-        else session.setSignedIn(email, name);
+        else session.setSignedIn(email, name, user.id ?? null);
       });
     };
     void currentSession().then((current) => {
@@ -53,7 +53,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       } else {
         latest += 1;
         // Signed out (here, elsewhere, or the session expired): stop syncing first, so
-        // clearing the stores is never sent as a deletion, then drop anything entered.
+        // clearing the stores is never sent as a deletion; changes not saved yet are kept
+        // on this device for this user's next sign-in. Then clear the screens.
         stopCloudSync();
         useExpenseStore.getState().resetPreview();
         useNotesStore.getState().resetPreview();

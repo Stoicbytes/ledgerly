@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
-import { useSyncStatus } from '@/features/sync/syncStatus';
+import { hasUnsavedChanges } from '@/features/sync/cloudSync';
 import { isStaleBuildError, reloadForUpdate } from '../staleBuild';
+
+jest.mock('@/features/sync/cloudSync', () => ({ hasUnsavedChanges: jest.fn() }));
 
 const stale = Object.assign(new Error('Loading module /x.js failed.'), {
   name: 'AsyncRequireError',
@@ -23,7 +25,7 @@ describe('reloading after a new deploy', () => {
         setItem: (key: string, value: string) => saved.set(key, value),
       },
     };
-    useSyncStatus.getState().set('saved');
+    jest.mocked(hasUnsavedChanges).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -44,10 +46,11 @@ describe('reloading after a new deploy', () => {
     expect(reload).toHaveBeenCalledTimes(2);
   });
 
-  it('does not reload while changes wait to be saved, or for other errors', () => {
-    useSyncStatus.getState().set('retrying');
+  it('does not reload while any change is unsaved, or for other errors', () => {
+    // Includes an edit still in its short wait before sending (status says Saved).
+    jest.mocked(hasUnsavedChanges).mockReturnValue(true);
     expect(reloadForUpdate(stale)).toBe(false);
-    useSyncStatus.getState().set('saved');
+    jest.mocked(hasUnsavedChanges).mockReturnValue(false);
     expect(reloadForUpdate(new Error('boom'))).toBe(false);
     expect(reload).not.toHaveBeenCalled();
   });

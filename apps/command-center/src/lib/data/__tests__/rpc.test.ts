@@ -27,6 +27,20 @@ describe('callRpc', () => {
     });
   });
 
+  it('asks for keepalive only when leaving the page with a small body', async () => {
+    fetchMock.mockResolvedValue({ ok: true, text: async () => 'null' });
+    await callRpc('sync_ledger_v2', { p_changes: {} }, { keepalive: true });
+    expect(fetchMock.mock.calls[0][1].keepalive).toBe(true);
+    await callRpc(
+      'sync_ledger_v2',
+      { p_changes: { note: 'x'.repeat(70_000) } },
+      { keepalive: true },
+    );
+    expect(fetchMock.mock.calls[1][1].keepalive).toBeUndefined();
+    await callRpc('sync_ledger_v2', { p_changes: {} });
+    expect(fetchMock.mock.calls[2][1].keepalive).toBeUndefined();
+  });
+
   it('reports refused changes as final and outages as retryable', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 400, json: async () => ({ code: '23514' }) });
     const refused = await callRpc('sync_ledger', { p_changes: {} }).catch((error) => error);

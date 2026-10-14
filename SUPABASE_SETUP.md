@@ -27,6 +27,9 @@ This page lists what is set up on the Supabase side and how to manage it. Connec
 | `stock_benchmarks`, index fund NAV history          | 0014                | Stocks → vs Index                                          |
 | `notes.remind_on`, `notes.trashed_at`               | 0015                | Notes → reminders and Recently deleted                     |
 | `employers`, `payslips`, `pf_entries`               | 0016                | Salary & PF (payslips across employers, the PF passbook)   |
+| `reset_data(scope)`                                 | 0018                | Settings → Reset data                                      |
+| Allowlist and two-step rules on every table         | 0019                | Every request (see Security hardening below)               |
+| `sync_ledger_v2(jsonb)` (conflict checks)           | 0020                | Saving without overwriting newer data from another device  |
 
 `internal` (allowlist, hook, helpers) is not exposed through the Data API, so none of it is
 reachable from the browser.
@@ -34,15 +37,16 @@ reachable from the browser.
 ## One-time setup checklist
 
 1. **Migrations applied, in order:** every file in `supabase/migrations/`, oldest first, from
-   `202610080004_foundation.sql` to `202610180018_reset_data.sql` (SQL Editor → paste →
+   `202610080004_foundation.sql` to `202610190020_sync_conflicts.sql` (SQL Editor → paste →
    Run). Each file is safe to run again.
 2. **Sign-up hook on:** Authentication → Hooks → Before User Created → Postgres → schema `internal`,
    function `before_user_created`. Add your own email to the allowlist first (below). The **Allow new users to sign up** switch can stay off as a
    second layer.
 3. **Two-step sign-in available:** Authentication → Multi-Factor → TOTP enabled (on by default).
 4. **Redirect URLs:** Authentication → URL Configuration → add
-   `https://ledgerly.vercel.app/reset-password` (and
-   `http://localhost:8081/reset-password` for local development). Set the Site URL to
+   `https://ledgerly.vercel.app/reset-password` and `https://ledgerly.vercel.app/dashboard/settings`
+   (the email-change confirmation link returns there), plus the same two paths on
+   `http://localhost:8081` for local development. Set the Site URL to
    `https://ledgerly.vercel.app`.
 5. **Keys:** the app uses only the **Project URL** and the **publishable** key. Never use the
    secret or service-role key anywhere in the app or its Vercel variables.
@@ -254,6 +258,46 @@ the signed-in user, so Row Level Security and the two-step sign-in still apply, 
 records each deleted row. Run it after 0017; safe to run again. Without it, the app says the reset
 needs this migration and deletes nothing.
 
+## Security hardening (migration 0019)
+
+`202610190019_security_hardening.sql`. **Before running it, make sure your own email is in
+`internal.auth_allowlist`** (`select email from internal.auth_allowlist;`). It must already be
+there for the sign-up hook; after 0019 an account whose email is not on the list reads and
+writes nothing, whatever the hook said when it was created. The SQL Editor shows a warning when
+an existing account is not on the list (the count only, no emails).
+
+- `internal.session_meets_mfa()`, the rule behind every restrictive `*_mfa` policy, the
+  `receipts` and `portfolio-media` upload/delete policies and the publish/preview functions, now
+  also requires the signed-in email to be on the allowlist. Removing an email from the list
+  therefore cuts that account off at once (it does not delete the account or its rows).
+- The market data tables and `audit_logs` get the same restrictive policy: a password-only
+  session (no 6-digit code yet, while two-step sign-in is on) sees nothing, not even which
+  funds or shares have price history. The `market-refresh` function uses the service role and
+  is not affected.
+- Row Level Security is forced on every public table; `valid_email()` accepts only letters,
+  digits and `. _ + -` before the `@` (no `?`, `&`, `=`, `%`, `/` or spaces); existing rows are not
+  checked again.
+- The contact form rate-limits by `cf-connecting-ip` only, the address set by the proxy in front
+  of the Supabase API. Headers a visitor can send (`x-forwarded-for`, `x-real-ip`) are ignored; a
+  request without that header counts in one shared bucket.
+
+`supabase/tests/access_rules.sql` (run by CI after the fresh install) checks these rules with
+real roles and JWT claims: password-only, after the code, another account, an account not on
+the allowlist, and a signed-out visitor.
+
+## Conflict checks when saving (migration 0020)
+
+`202610190020_sync_conflicts.sql` adds `sync_ledger_v2(changes)`, which the app now uses to save.
+It takes the same changes as `sync_ledger`, with the same limits and rules (it runs as the
+signed-in user, so Row Level Security and two-step sign-in apply), and adds one check: each row
+the app believes already exists carries the `updated_at` the app last saw. If the row was changed
+since (on another device or tab) or deleted, that row is skipped (never re-inserted) and returned
+under `conflicts`; the app then shows the newer version and says so. New rows and deletes work as
+before. `sync_ledger` keeps its signature and now runs the same code. Run it after 0018; safe to
+run again. Without it the app falls back to `sync_ledger` by itself (no conflict checks; the last
+save of a row wins). Tests: `supabase/tests/sync_conflicts.sql` (run with `psql -f` on a database
+built by `fresh_install.sh`).
+
 ## Bringing in existing funds and shares
 
 Use **Import** on the Mutual funds and Stocks pages with your broker's tradebooks
@@ -276,8 +320,9 @@ for the schemes you hold. It never runs in the browser. Details:
 - `SUPABASE_ACCESS_TOKEN`: create one at supabase.com/dashboard/account/tokens.
 - `SUPABASE_PROJECT_REF`: the part of your Project URL before `.supabase.co`.
 
-Then run **Actions → Deploy Edge Functions → Run workflow** (it also runs on every change to
-`supabase/functions` on `main`).
+Then run **Actions → Deploy Edge Functions → Run workflow**. It also runs by itself after **CI**
+passes on `main`, deploying the commit CI checked, with a pinned Supabase CLI version (2.119.0;
+raise it in `.github/workflows/deploy-functions.yml` deliberately).
 
 **Option B, Supabase CLI:** `supabase functions deploy market-refresh --project-ref <ref> --no-verify-jwt`.
 
@@ -406,7 +451,12 @@ asks for your password and then the 6-digit code.
 
 - **Day-to-day use:** tick **Keep me signed in on this device** at sign-in on your own phone or
   computer; the code is then asked for only when you sign in again. Choose the automatic sign-out
-  under **Settings → This device**.
+  under **Settings → This device**: **Auto** signs out after 30 minutes without activity, or 8 hours
+  on a device you keep signed in; **Never** applies only if you choose it.
+- The app's idle sign-out only runs while the app is open. Also set a server-side limit:
+  **Authentication → Sessions → Time-box user sessions** (for example 7 days) and **Inactivity
+  timeout** (for example 24 hours). These end a session even on a lost or stolen device. They may
+  need a paid Supabase plan.
 - If you lose the authenticator app, remove the factor in **Authentication → Users → (your user)
   → Multi-factor authentication**, then set it up again.
 
@@ -418,8 +468,27 @@ asks for your password and then the 6-digit code.
 - No service-role keys, database passwords or admin tokens in the app, in `EXPO_PUBLIC_`
   variables, or in the repository.
 
+## Go-live security checklist
+
+- [ ] **Sign-ups off:** Authentication → Sign In / Providers → **Allow new users to sign up** off.
+- [ ] **Anonymous sign-ins off** (same page).
+- [ ] **Before User Created hook on** (`internal.before_user_created`), and **your email is in
+      `internal.auth_allowlist`** (0019 locks out every account that is not).
+- [ ] **Two-step sign-in on in the app** (Settings → Two-step sign-in).
+- [ ] **2FA on the accounts that control the app:** Supabase, Vercel and GitHub.
+- [ ] **Site URL and redirect URLs:** Site URL `https://ledgerly.vercel.app`; redirect URLs
+      `/reset-password` and `/dashboard/settings` on that address.
+- [ ] **Session limits:** Authentication → Sessions → time-box and inactivity timeout (above).
+- [ ] **Custom SMTP:** Authentication → Emails → SMTP settings, so reset and email-change mails
+      come from your domain and are not limited to the built-in sender's few emails per hour.
+- [ ] **Vercel Deployment Protection** on preview deployments (Project → Settings → Deployment
+      Protection → Vercel Authentication). Previews use the production database and keys.
+- [ ] Only the publishable key in Vercel variables; the service-role key only in the Edge
+      Function's secrets.
+
 ## Verification before relying on it
 
-Use two separate accounts in separate browsers. Confirm each sees only its own data, that a
+`supabase/tests/access_rules.sql` checks the rules on a local copy of the schema in CI. On the
+live project, use two separate accounts in separate browsers. Confirm each sees only its own data, that a
 signed-out session gets nothing, and that changing a `user_id` in a request is rejected. Use
 HTTPS in production.

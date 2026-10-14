@@ -7,6 +7,7 @@ export * from './CategoryIcon';
 export * from './Chip';
 export * from './Delta';
 export * from './GradientFill';
+export * from './HitArea';
 export * from './IconButton';
 export * from './Money';
 export * from './ProgressBar';

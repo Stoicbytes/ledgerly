@@ -1,12 +1,5 @@
-import {
-  joinNote,
-  planSheetImport,
-  readExpenseSheet,
-  SKIP_REASONS,
-  type Account,
-  type Category,
-  type Transaction,
-} from '..';
+import { type Account, type Category, type Transaction } from '..';
+import { joinNote, planSheetImport, readExpenseSheet, SKIP_REASONS } from '../sheetImports';
 
 const HEADER = [
   'Period',
@@ -94,7 +87,8 @@ describe('reading an expense export', () => {
     expect(joinNote('', 'Tea')).toBe('Tea');
     expect(joinNote('Snacks', 'Snacks with friends')).toBe('Snacks with friends');
     expect(joinNote('Toll', 'Highway shop')).toBe('Toll · Highway shop');
-    expect(joinNote('x'.repeat(200), '')).toHaveLength(120);
+    expect(joinNote('x'.repeat(200), '')).toHaveLength(200);
+    expect(joinNote('x'.repeat(600), '')).toHaveLength(500);
   });
 });
 

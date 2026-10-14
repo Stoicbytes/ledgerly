@@ -1,9 +1,10 @@
 import { View } from 'react-native';
-import { RefreshCw } from '@/components/icons';
+import { CircleAlert, RefreshCw } from '@/components/icons';
 import { Button, Text } from '@/components/ui';
 import { useToast } from '@/components/feedback';
-import { dayLabel } from '@/lib/domain/expenses';
-import type { RefreshRun } from '@/lib/domain/investments';
+import { dayLabel, todayIso } from '@/lib/domain/expenses';
+import { priceFreshness, type PriceKind, type RefreshRun } from '@/lib/domain/investments';
+import { useTheme } from '@/theme';
 import { useMarketStore } from '../state/marketStore';
 
 const SOURCES: Record<RefreshRun['source'], string> = {
@@ -13,27 +14,44 @@ const SOURCES: Record<RefreshRun['source'], string> = {
   mfapi: 'history',
 };
 
-/** "NAVs as of Tue, 7 Oct (AMFI)": when the prices on screen are from, and where from. */
-export function PriceStatus({ kind }: { kind: 'funds' | 'stocks' }) {
+/**
+ * "NAVs as of Tue, 7 Oct (AMFI)": when the prices on screen are from, and where from. Warns
+ * when they are older than the last trading day or the latest update failed.
+ */
+export function PriceStatus({ kind }: { kind: PriceKind }) {
+  const theme = useTheme();
   const mode = useMarketStore((state) => state.mode);
   const runs = useMarketStore((state) => state.market.runs);
   const notice = useMarketStore((state) => state.notice);
-  const sources: RefreshRun['source'][] = kind === 'funds' ? ['amfi'] : ['nse', 'bse'];
-  const latest = runs
-    .filter((run) => sources.includes(run.source) && run.status === 'ok' && run.dataDate)
-    .sort((a, b) => (b.dataDate ?? '').localeCompare(a.dataDate ?? ''))[0];
+  const fresh = priceFreshness(runs, kind, todayIso());
   const what = kind === 'funds' ? 'NAVs' : 'Closing prices';
   const text =
     mode === 'preview'
       ? `${what}: sample values`
-      : latest?.dataDate
-        ? `${what} as of ${dayLabel(latest.dataDate, 'short')} (${SOURCES[latest.source]})`
+      : fresh.dataDate && fresh.source
+        ? `${what} as of ${dayLabel(fresh.dataDate, 'short')} (${SOURCES[fresh.source]})`
         : `${what}: not fetched yet`;
+  const warning =
+    mode === 'preview'
+      ? null
+      : fresh.failure
+        ? `The last price update failed: ${fresh.failure}`
+        : fresh.stale
+          ? `${what} are out of date. Use Update prices to fetch the latest.`
+          : null;
   return (
     <View style={{ gap: 2 }}>
-      <Text variant="caption" color="textTertiary">
+      <Text variant="caption" color="textSecondary">
         {text}
       </Text>
+      {warning ? (
+        <View role="alert" style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <CircleAlert size={14} color={theme.colors.warning} aria-hidden />
+          <Text variant="caption" color="warning" style={{ flexShrink: 1 }}>
+            {warning}
+          </Text>
+        </View>
+      ) : null}
       {notice ? (
         <Text variant="caption" color="textSecondary" role="status">
           {notice}

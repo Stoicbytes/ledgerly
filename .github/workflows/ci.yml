@@ -30,6 +30,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: supabase/tests/fresh_install.sh
+      - name: Access rules (RLS, two-step sign-in, allowlist, anon)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/tests/access_rules.sql
+      - name: Save conflict checks (sync_ledger_v2)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/tests/sync_conflicts.sql
 
   edge-functions:
     name: Edge functions (Deno)

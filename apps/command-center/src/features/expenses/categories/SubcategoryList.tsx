@@ -7,13 +7,14 @@ import {
   entryCounts,
   MAX_NAME_LENGTH,
   subcategoriesOf,
+  undoCategoryDelete,
   validateName,
   type Category,
 } from '@/lib/domain/expenses';
 import { useTheme } from '@/theme';
 import { TextField } from '../components/TextField';
 import { useLedger } from '../hooks/useLedger';
-import { useExpenseStore } from '../state/expenseStore';
+import { getLedger, useExpenseStore } from '../state/expenseStore';
 import { EntryInput } from '../entry/EntryInput';
 
 /** Rename, reorder, delete and add the subcategories of one category. */
@@ -40,11 +41,15 @@ export function SubcategoryList({ parent }: { parent: Category }) {
     setName('');
   };
   const remove = (sub: Category) => {
-    const previous = store().deleteCategory(sub.id, null);
+    const before = store().deleteCategory(sub.id, null);
+    const after = getLedger();
     const moved = counts.get(sub.id) ?? 0;
     toast.show({
       message: `${sub.name} deleted${moved ? ` · ${moved} entries moved to ${parent.name}` : ''}`,
-      action: { label: 'Undo', onPress: () => store().restoreLedger(previous) },
+      action: {
+        label: 'Undo',
+        onPress: () => store().restoreLedger(undoCategoryDelete(before, after, getLedger())),
+      },
     });
   };
   return (

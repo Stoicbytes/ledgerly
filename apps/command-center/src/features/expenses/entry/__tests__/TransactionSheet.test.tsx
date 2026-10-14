@@ -14,12 +14,25 @@ beforeEach(() => {
     editingId: null,
     active: null,
     errors: {},
-    last: { kind: 'expense', accountId: null },
+    last: { kind: 'expense', accounts: {} },
   });
 });
 
 describe('CategoryPicker', () => {
+  it('puts the categories used most in the last 90 days first', async () => {
+    const onChoose = jest.fn();
+    await renderWithProviders(
+      <CategoryPicker kind="expense" selectedId={null} onChoose={onChoose} columns={3} />,
+    );
+    expect(screen.getByText('Used most')).toBeTruthy();
+    const tea = screen.getAllByRole('button', { name: 'Food, Tea' });
+    await fireEvent.press(tea[0]);
+    expect(onChoose).toHaveBeenCalledWith(TEA);
+  });
+
   it('opens subcategories in place under their parent and picks one', async () => {
+    // No recent entries: no "Used most" shortcuts, only the grid.
+    useExpenseStore.setState({ transactions: [] });
     const onChoose = jest.fn();
     await renderWithProviders(
       <CategoryPicker kind="expense" selectedId={null} onChoose={onChoose} columns={3} />,
@@ -100,6 +113,7 @@ describe('TransactionSheet', () => {
   const open = () => act(() => useTransactionForm.getState().openNew());
 
   it('adds an expense through the fast path: amount → category → account → note', async () => {
+    useExpenseStore.setState({ transactions: [] });
     await renderWithProviders(<TransactionSheet />);
     await open();
     const amount = screen.getByLabelText('Amount in rupees');

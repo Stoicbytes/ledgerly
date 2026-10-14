@@ -1,5 +1,5 @@
 import { Pressable } from 'react-native';
-import { Text } from '@/components/ui';
+import { HitArea, Text } from '@/components/ui';
 import { useInteractionState } from '@/hooks/useInteractionState';
 import { minHitSize, useTheme } from '@/theme';
 
@@ -40,6 +40,7 @@ export function PickChip({ label, onPress, selected = false, accessibilityLabel 
         focused && { outlineColor: theme.colors.focus, outlineWidth: 2, outlineStyle: 'solid' },
       ]}
     >
+      <HitArea height={30} />
       <Text variant="label" color={selected ? 'onInk' : 'textPrimary'} numberOfLines={1}>
         {label}
       </Text>

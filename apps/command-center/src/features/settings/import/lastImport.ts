@@ -2,7 +2,8 @@ import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseSto
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { currentSession } from '@/lib/data/rpc';
 import { readPref, writePref } from '@/lib/device/prefs';
-import { withoutImported, type SheetImportPlan } from '@/lib/domain/expenses';
+import { withoutImported } from '@/lib/domain/expenses';
+import type { SheetImportPlan } from '@/lib/domain/expenses/sheetImports';
 
 /**
  * The last import's created ids, kept on this device per signed-in user so "Undo last

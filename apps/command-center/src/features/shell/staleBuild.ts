@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { useSyncStatus } from '@/features/sync/syncStatus';
+import { hasUnsavedChanges } from '@/features/sync/cloudSync';
 
 const KEY = 'ledgerly:reloaded-for-update';
 const WINDOW_MS = 60_000;
@@ -19,8 +19,8 @@ export const isStaleBuildError = (error: Error) =>
 export function reloadForUpdate(error: Error, now = Date.now()): boolean {
   if (Platform.OS !== 'web' || !isStaleBuildError(error)) return false;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
-  const status = useSyncStatus.getState().status;
-  if (status === 'saving' || status === 'retrying') return false;
+  // Any change not yet in the database (waiting to be sent, sending, or to be retried).
+  if (hasUnsavedChanges()) return false;
   try {
     const last = Number(window.sessionStorage.getItem(KEY) ?? 0);
     if (now - last < WINDOW_MS) return false;

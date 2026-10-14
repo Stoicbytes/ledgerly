@@ -8,7 +8,7 @@ import {
   selectionCheck,
   selectTrades,
   type HoldingPlan,
-} from '@/lib/domain/investments';
+} from '@/lib/domain/investments/tradebookImport';
 import { newId } from '@/lib/ids';
 import { pickFiles } from './pickFiles';
 import { readTradebookFile } from './readFile';
