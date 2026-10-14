@@ -62,13 +62,13 @@ Checks run on every write, whatever the app sends:
 
 ## Functions
 
-| Function                                                                                                                      | Runs as           | Used by                                             |
-| ----------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------- |
-| `load_ledger()`, `sync_ledger(jsonb)`                                                                                         | The user (RLS)    | Dashboard sync                                      |
-| `load_market()`, `search_funds`, `search_securities`, `nav_on`, `load_stock_benchmark()`, `set_stock_benchmark(int)`          | The user (RLS)    | Funds and Stocks pages                              |
-| `market_*` (ingest, run start/finish, held schemes, status)                                                                   | Service role only | `market-refresh` Edge Function                      |
-| `portfolio_load`, `_save`, `_delete`, `_reorder`, `_mark_message`, `_media_paths`, `_publish`, `_unpublish`, `_preview_token` | The user (RLS)    | Dashboard → Portfolio                               |
-| `portfolio_public`, `portfolio_preview`, `portfolio_contact`                                                                  | Definer (narrow)  | The public site; the only functions `anon` may call |
+| Function                                                                                                                                 | Runs as           | Used by                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------- |
+| `load_ledger()`, `sync_ledger(jsonb)`, `sync_ledger_v2(jsonb)` (0020: skips and reports rows changed or deleted since `base_updated_at`) | The user (RLS)    | Dashboard sync                                      |
+| `load_market()`, `search_funds`, `search_securities`, `nav_on`, `load_stock_benchmark()`, `set_stock_benchmark(int)`                     | The user (RLS)    | Funds and Stocks pages                              |
+| `market_*` (ingest, run start/finish, held schemes, status)                                                                              | Service role only | `market-refresh` Edge Function                      |
+| `portfolio_load`, `_save`, `_delete`, `_reorder`, `_mark_message`, `_media_paths`, `_publish`, `_unpublish`, `_preview_token`            | The user (RLS)    | Dashboard → Portfolio                               |
+| `portfolio_public`, `portfolio_preview`, `portfolio_contact`                                                                             | Definer (narrow)  | The public site; the only functions `anon` may call |
 
 All functions set an empty `search_path` and name every object with its schema.
 

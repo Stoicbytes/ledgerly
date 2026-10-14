@@ -5,9 +5,15 @@
  * closing the browser; two-step sign-in still guards every new device. Neither
  * replaces Row Level Security. Storage can be unavailable (private windows, blocked
  * site data), in which case the user simply signs in again.
+ *
+ * The PKCE code verifier of a password-reset request always goes to localStorage: the
+ * reset email opens a new tab, which has its own sessionStorage. It is short-lived and
+ * single-use (Supabase removes it after the exchange, and so does `removeItem` here).
  */
 const KEEP_KEY = 'cc.keepSignedIn';
 const SESSION_PREFIX = 'sb-';
+const VERIFIER_SUFFIX = '-code-verifier';
+const isVerifier = (key: string) => key.endsWith(VERIFIER_SUFFIX);
 
 /** Web lets the owner choose; native apps always keep the session in the keystore. */
 export const canChooseKeepSignedIn = true;
@@ -40,7 +46,7 @@ export function setKeptSignedIn(keep: boolean): void {
     else local.removeItem(KEEP_KEY);
     const [from, to] = keep ? [session, local] : [local, session];
     const keys = Array.from({ length: from.length }, (_, index) => from.key(index)).filter(
-      (key): key is string => !!key && key.startsWith(SESSION_PREFIX),
+      (key): key is string => !!key && key.startsWith(SESSION_PREFIX) && !isVerifier(key),
     );
     for (const key of keys) {
       const value = from.getItem(key);
@@ -63,7 +69,7 @@ export const authStorage = {
   },
   setItem(key: string, value: string): void {
     const { session, local } = stores();
-    const keep = isKeptSignedIn();
+    const keep = isKeptSignedIn() || isVerifier(key);
     try {
       (keep ? local : session)?.setItem(key, value);
       (keep ? session : local)?.removeItem(key);

@@ -4,6 +4,7 @@ import { useNotesStore } from '@/features/notes/state/notesStore';
 import { usePortfolioStore } from '@/features/investments/state/portfolioStore';
 import { useMarketStore } from '@/features/investments/state/marketStore';
 import { loadCloudData, saveChanges, type CloudData } from '@/lib/data/ledgerRepository';
+import { UNCHECKED } from '@/lib/data/saveResult';
 import { loadMarket } from '@/lib/data/marketRepository';
 import { EMPTY_MARKET, EMPTY_PORTFOLIO } from '@/lib/domain/investments';
 import { RpcError } from '@/lib/data/rpc';
@@ -29,11 +30,12 @@ const cloud = (): CloudData => ({
 
 beforeEach(() => {
   jest.useFakeTimers();
+  useSyncStatus.setState({ notices: [] });
   jest.clearAllMocks();
   stopCloudSync();
   useSession.setState({ status: 'signedIn', email: 'me@example.com', recovery: false });
   jest.mocked(loadCloudData).mockResolvedValue(cloud());
-  jest.mocked(saveChanges).mockResolvedValue(undefined);
+  jest.mocked(saveChanges).mockResolvedValue(UNCHECKED);
   jest.mocked(loadMarket).mockResolvedValue(EMPTY_MARKET);
 });
 afterEach(() => {
@@ -79,13 +81,18 @@ describe('cloud sync', () => {
     expect(useSyncStatus.getState().status).toBe('saved');
   });
 
-  it('rolls back a change the database refuses', async () => {
+  it('rolls back a change the database refuses, and says so until dismissed', async () => {
     await startCloudSync();
     jest.mocked(saveChanges).mockRejectedValueOnce(new RpcError(400, '23514'));
     useExpenseStore.getState().saveAccount({ name: 'Bank', group: 'bank', openingBalance: 0 });
     await settle();
     expect(useExpenseStore.getState().accounts.map((a) => a.name)).toEqual(['Cash']);
-    expect(useSyncStatus.getState().rejected).toBe(true);
+    const [notice] = useSyncStatus.getState().notices;
+    expect(notice.message).toMatch(/^1 change could not be saved: account “Bank” — /);
+    await jest.advanceTimersByTimeAsync(60_000);
+    expect(useSyncStatus.getState().notices).toHaveLength(1);
+    useSyncStatus.getState().dismiss(notice.id);
+    expect(useSyncStatus.getState().notices).toHaveLength(0);
   });
 
   it('never sends the sign-out clearing as a deletion', async () => {

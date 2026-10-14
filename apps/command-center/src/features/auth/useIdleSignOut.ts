@@ -14,7 +14,9 @@ const WEB_ACTIVITY = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
  * Signs a real (not preview) session out after the device's chosen stretch without
  * activity (none for "Never"), with a warning first. Activity is any touch, click, key or scroll; `markActive` is also
  * attached to the app shell's touch capture so native taps count. Time spent in the
- * background counts as idle: coming back after the limit signs out at once.
+ * background counts as idle: coming back after the limit signs out at once. Never while
+ * a change is unsaved: then `unsaved` keeps the warning up and saving is tried again
+ * every check; the sign-out follows once everything is saved.
  */
 export function useIdleSignOut() {
   const signedIn = useSession((state) => state.status === 'signedIn');
@@ -23,10 +25,12 @@ export function useIdleSignOut() {
   const pathname = usePathname();
   const lastActive = useRef(0);
   const [phase, setPhase] = useState<IdlePhase>('active');
+  const [unsaved, setUnsaved] = useState(false);
 
   const markActive = useCallback(() => {
     lastActive.current = Date.now();
-    setPhase((current) => (current === 'warning' ? 'active' : current));
+    setUnsaved(false);
+    setPhase('active');
   }, []);
 
   useEffect(() => {
@@ -38,15 +42,20 @@ export function useIdleSignOut() {
       setPhase(next);
       if (next === 'expired' && !ended) {
         ended = true;
-        void flushCloudSync()
-          .then(signOut)
-          .then(() => {
-            useSession.getState().setSignedOut();
-            router.replace({
-              pathname: '/sign-in',
-              params: { reason: 'idle', redirect: pathname },
-            });
+        void flushCloudSync().then(async (saved) => {
+          if (!saved) {
+            // Signing out now would lose the change: stay, warn, try again next check.
+            ended = false;
+            setUnsaved(true);
+            return;
+          }
+          await signOut();
+          useSession.getState().setSignedOut();
+          router.replace({
+            pathname: '/sign-in',
+            params: { reason: 'idle', redirect: pathname },
           });
+        });
       }
     };
     const timer = setInterval(check, CHECK_EVERY_MS);
@@ -67,5 +76,9 @@ export function useIdleSignOut() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, timeout, markActive]);
 
-  return { phase: enabled ? phase : ('active' as const), markActive };
+  return {
+    phase: enabled ? phase : ('active' as const),
+    unsaved: enabled && unsaved,
+    markActive,
+  };
 }

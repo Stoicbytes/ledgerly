@@ -36,7 +36,7 @@ export function ResetPasswordScreen() {
     return (
       <AuthCard
         title="Link not valid"
-        description="Reset links work once, expire after a while, and must be opened in the browser where you asked for them."
+        description="Reset links work once and expire after a while. Open the link in the same browser where you asked for it (any tab or window)."
       >
         <Link href="/forgot-password" style={{ alignSelf: 'center' }}>
           <Text variant="label" style={{ textDecorationLine: 'underline' }}>

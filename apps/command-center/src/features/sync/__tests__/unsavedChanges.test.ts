@@ -1,6 +1,7 @@
 import { useSession } from '@/features/auth/sessionStore';
 import { useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { loadCloudData, saveChanges, type CloudData } from '@/lib/data/ledgerRepository';
+import { UNCHECKED } from '@/lib/data/saveResult';
 import { loadMarket } from '@/lib/data/marketRepository';
 import { EMPTY_MARKET, EMPTY_PORTFOLIO } from '@/lib/domain/investments';
 import { RpcError } from '@/lib/data/rpc';
@@ -29,7 +30,7 @@ beforeEach(() => {
   stopCloudSync();
   useSession.setState({ status: 'signedIn', email: 'me@example.com', recovery: false });
   jest.mocked(loadCloudData).mockResolvedValue(cloud());
-  jest.mocked(saveChanges).mockResolvedValue(undefined);
+  jest.mocked(saveChanges).mockResolvedValue(UNCHECKED);
   jest.mocked(loadMarket).mockResolvedValue(EMPTY_MARKET);
 });
 afterEach(() => {
@@ -80,6 +81,8 @@ describe('unsaved changes', () => {
     doc.dispatchEvent(new Event('visibilitychange'));
     await jest.advanceTimersByTimeAsync(0);
     expect(saveChanges).toHaveBeenCalledTimes(1);
+    // Sent so it can finish even if the page is closed next.
+    expect(saveChanges).toHaveBeenCalledWith(expect.anything(), { keepalive: true });
     stopCloudSync();
     restore();
   });

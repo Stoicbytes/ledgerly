@@ -6,6 +6,7 @@ import { IdleWarning } from '@/features/auth/IdleWarning';
 import { useIdleSignOut } from '@/features/auth/useIdleSignOut';
 import { TransactionSheet } from '@/features/expenses/entry/TransactionSheet';
 import { SearchSheet } from '@/features/expenses/search/SearchSheet';
+import { SyncNotices } from '@/features/sync/SyncNotices';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { layout, useTheme } from '@/theme';
 import { DesktopHeader } from './DesktopHeader';
@@ -43,6 +44,9 @@ export function AppShell() {
         {isMobile ? (
           <View style={{ flex: 1 }}>
             <MobileHeader />
+            <View style={{ paddingHorizontal: theme.space[4] }}>
+              <SyncNotices />
+            </View>
             <TabSlot style={{ flex: 1 }} />
             <FloatingTabBar />
           </View>
@@ -53,7 +57,8 @@ export function AppShell() {
               style={{ flex: 1, flexDirection: 'row', gap: layout.canvasPadding, minHeight: 0 }}
             >
               <LeftRail />
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: theme.space[3] }}>
+                <SyncNotices />
                 <TabSlot style={{ flex: 1 }} />
               </View>
             </View>
@@ -62,7 +67,11 @@ export function AppShell() {
         <SearchSheet />
         <TransactionSheet />
       </Tabs>
-      <IdleWarning visible={idle.phase === 'warning'} onStay={idle.markActive} />
+      <IdleWarning
+        visible={idle.phase === 'warning'}
+        unsaved={idle.unsaved}
+        onStay={idle.markActive}
+      />
     </View>
   );
 }

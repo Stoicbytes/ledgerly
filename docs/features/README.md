@@ -3,8 +3,12 @@
 One section per feature: what it is for, where it lives in the code, what it reads and writes,
 and what to watch out for. Paths are under `apps/command-center/src/` unless noted. Every
 feature that saves data does so through the same sync (`features/sync/cloudSync.ts` →
-`load_ledger` / `sync_ledger`; changes from another device are picked up when you come back to
-the app), except the Portfolio editor, which saves item by item. The
+`load_ledger` / `sync_ledger_v2`; changes from another device are picked up when you come back
+to the app, focus the window, or every 5 minutes), except the Portfolio editor, which saves item
+by item. The sync never silently loses an edit: unsaved changes are kept in the browser and saved
+at the same user's next sign-in; idle sign-out waits until everything is saved; a refused row is
+left out on its own (the rest is saved) with a note that stays until dismissed; a row changed
+or deleted on another device is not overwritten (migration 0020), and the newer version is shown. The
 Supabase calls are listed in [`../architecture/DATA_ACCESS.md`](../architecture/DATA_ACCESS.md),
 and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_CASES.md).
 

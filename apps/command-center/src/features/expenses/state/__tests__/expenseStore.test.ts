@@ -1,6 +1,11 @@
-import { accountBalance, balanceSummary, periodTotals } from '@/lib/domain/expenses';
+import {
+  accountBalance,
+  balanceSummary,
+  periodTotals,
+  undoCategoryDelete,
+} from '@/lib/domain/expenses';
 import { accounts, categories, transactions } from '@/lib/domain/expenses/__fixtures__/ledger';
-import { useExpenseStore } from '../expenseStore';
+import { getLedger, useExpenseStore } from '../expenseStore';
 import { deletePerson, recordRepayment, savePerson } from '../peopleActions';
 
 const store = () => useExpenseStore.getState();
@@ -84,6 +89,23 @@ describe('categories', () => {
     ).toBe(1_046_000);
     store().restoreLedger(previous);
     expect(store().transactions.find((item) => item.id === 't3')?.categoryId).toBe('tea');
+  });
+
+  it('undo restores only what the delete changed, keeping later additions', () => {
+    const before = store().deleteCategory('food', 'rent');
+    const after = getLedger();
+    // Within the toast window: a new entry, an account, and one moved entry edited again.
+    const added = store().saveTransaction({ ...store().transactions[0], note: 'later' });
+    store().saveAccount({ name: 'New bank', group: 'bank', openingBalance: 0 });
+    const t2 = store().transactions.find((item) => item.id === 't2')!;
+    store().saveTransaction({ ...t2, categoryId: 'salary' }, 't2');
+    store().restoreLedger(undoCategoryDelete(before, after, getLedger()));
+    expect(store().categories.some((item) => item.id === 'food')).toBe(true);
+    expect(store().categories.some((item) => item.id === 'tea')).toBe(true);
+    expect(store().transactions.find((item) => item.id === 't3')?.categoryId).toBe('tea');
+    expect(store().transactions.find((item) => item.id === 't2')?.categoryId).toBe('salary');
+    expect(store().transactions.some((item) => item.id === added.id)).toBe(true);
+    expect(store().accounts.some((item) => item.name === 'New bank')).toBe(true);
   });
 
   it('refuses to reassign to the wrong kind or to a deleted category', () => {

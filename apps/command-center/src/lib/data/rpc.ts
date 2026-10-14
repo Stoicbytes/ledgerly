@@ -5,6 +5,7 @@ import { supabaseConfig } from './supabaseConfig';
 export type RpcName =
   | 'load_ledger'
   | 'sync_ledger'
+  | 'sync_ledger_v2'
   | 'load_market'
   | 'search_funds'
   | 'search_securities'
@@ -52,9 +53,16 @@ export class RpcError extends Error {
  * Level Security applies. A small fetch instead of the full client library keeps the
  * bundle lean; only the publishable key and the user's access token are sent.
  */
-export async function callRpc<T>(name: RpcName, args: Record<string, unknown> = {}): Promise<T> {
-  return post<T>(`rest/v1/rpc/${name}`, args, RPC_TIMEOUT_MS);
+export async function callRpc<T>(
+  name: RpcName,
+  args: Record<string, unknown> = {},
+  options: { keepalive?: boolean } = {},
+): Promise<T> {
+  return post<T>(`rest/v1/rpc/${name}`, args, RPC_TIMEOUT_MS, options.keepalive);
 }
+
+/** Browsers send a `keepalive` request even as the page closes, but only up to 64 KB. */
+export const KEEPALIVE_MAX_BYTES = 60_000;
 
 /**
  * A request that hangs is abandoned (and reported as retryable) instead of leaving
@@ -98,9 +106,14 @@ let lastFailure: RpcError | null = null;
  */
 export const lastRequestFailure = (): RpcError | null => lastFailure;
 
-async function post<T>(path: string, body: Record<string, unknown>, timeoutMs: number): Promise<T> {
+async function post<T>(
+  path: string,
+  body: Record<string, unknown>,
+  timeoutMs: number,
+  keepalive = false,
+): Promise<T> {
   try {
-    const result = await send<T>(path, body, timeoutMs);
+    const result = await send<T>(path, body, timeoutMs, keepalive);
     lastFailure = null;
     return result;
   } catch (error) {
@@ -109,12 +122,18 @@ async function post<T>(path: string, body: Record<string, unknown>, timeoutMs: n
   }
 }
 
-async function send<T>(path: string, body: Record<string, unknown>, timeoutMs: number): Promise<T> {
+async function send<T>(
+  path: string,
+  body: Record<string, unknown>,
+  timeoutMs: number,
+  keepalive: boolean,
+): Promise<T> {
   const token = (await signedInSession())?.access_token;
   if (!token || !supabaseConfig) throw new RpcError(401, 'no_session');
   let response: Response;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const json = JSON.stringify(body);
   try {
     response = await fetch(`${supabaseConfig.url}/${path}`, {
       method: 'POST',
@@ -123,8 +142,10 @@ async function send<T>(path: string, body: Record<string, unknown>, timeoutMs: n
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: json,
       signal: controller.signal,
+      // Leaving the page: let the save finish after the page is gone (small bodies only).
+      ...(keepalive && json.length < KEEPALIVE_MAX_BYTES ? { keepalive: true } : {}),
     });
   } catch {
     throw new RpcError(0, controller.signal.aborted ? 'timeout' : 'network');

@@ -18,8 +18,9 @@ import {
 export function SampleDataBadge({ editable = false }: { editable?: boolean }) {
   const theme = useTheme();
   const cloud = useSyncStatus((state) => isCloudActive(state.status));
-  // Signed in: editable screens show the user's own data and its save state instead.
-  if (editable && cloud) return <SyncBadge />;
+  // Signed in: the data is the user's own. Editable screens show its save state instead;
+  // read-only screens (Reports) show nothing.
+  if (cloud) return editable ? <SyncBadge /> : null;
   return (
     <View
       accessible

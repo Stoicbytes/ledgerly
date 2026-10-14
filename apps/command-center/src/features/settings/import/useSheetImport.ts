@@ -2,6 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { getLedger, useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { useRecurringStore } from '@/features/expenses/state/recurringStore';
 import { pickFiles } from '@/features/investments/import/pickFiles';
+import { flushCloudSync } from '@/features/sync/cloudSync';
+import { isCloudActive, useSyncStatus } from '@/features/sync/syncStatus';
 import { withoutImported } from '@/lib/domain/expenses';
 import {
   planSheetImport,
@@ -15,7 +17,15 @@ export type SheetImportState =
   | { phase: 'choose'; problem: string | null }
   | { phase: 'reading' }
   | { phase: 'review'; file: string; read: SheetRead; plan: SheetImportPlan }
-  | { phase: 'done'; imported: SheetImportPlan };
+  | { phase: 'done'; imported: SheetImportPlan; save: ImportSave };
+
+/**
+ * Signed in, an import is done only once the database confirms it: `saving` until then,
+ * `saved`, or `notSaved` with how many entries did not make it (refused, or still waiting
+ * to be sent). `preview`: nothing is saved.
+ */
+export type ImportSave =
+  { state: 'preview' | 'saving' | 'saved' } | { state: 'notSaved'; refused: number };
 
 export const TOO_LARGE = 'The file is larger than 5 MB. Export a shorter period and import each.';
 
@@ -59,13 +69,25 @@ export function useSheetImport() {
     });
   }, []);
 
-  const approve = useCallback(() => {
+  const approve = useCallback(async () => {
     if (state.phase !== 'review' || busy.current) return;
     busy.current = true;
     const plan = planSheetImport(state.read, getLedger(), newId);
     useExpenseStore.getState().addImported(plan);
+    const cloud = isCloudActive(useSyncStatus.getState().status);
+    setState({ phase: 'done', imported: plan, save: { state: cloud ? 'saving' : 'preview' } });
+    if (cloud) {
+      const allSent = await flushCloudSync();
+      // Entries the database refused are taken out again (and named in a notice).
+      const kept = new Set(getLedger().transactions.map((item) => item.id));
+      const refused = plan.transactions.filter((item) => !kept.has(item.id)).length;
+      const save: ImportSave =
+        allSent && !refused ? { state: 'saved' } : { state: 'notSaved', refused };
+      setState((current) =>
+        current.phase === 'done' && current.imported === plan ? { ...current, save } : current,
+      );
+    }
     busy.current = false;
-    setState({ phase: 'done', imported: plan });
   }, [state]);
 
   const undo = useCallback(() => {

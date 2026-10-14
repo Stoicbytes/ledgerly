@@ -3,6 +3,7 @@ import { useSession } from '@/features/auth/sessionStore';
 import { cleanUnusedReceipts } from '@/features/expenses/photos/receipts';
 import { useExpenseStore } from '@/features/expenses/state/expenseStore';
 import { loadCloudData, saveChanges, type CloudData } from '@/lib/data/ledgerRepository';
+import { UNCHECKED } from '@/lib/data/saveResult';
 import { loadMarket } from '@/lib/data/marketRepository';
 import { EMPTY_MARKET, EMPTY_PORTFOLIO } from '@/lib/domain/investments';
 import { REFRESH_AFTER_MS, refreshCloudData, startCloudSync, stopCloudSync } from '../cloudSync';
@@ -38,7 +39,7 @@ beforeEach(() => {
   stopCloudSync();
   useSession.setState({ status: 'signedIn', email: 'me@example.com', recovery: false });
   jest.mocked(loadCloudData).mockResolvedValue(cloud());
-  jest.mocked(saveChanges).mockResolvedValue(undefined);
+  jest.mocked(saveChanges).mockResolvedValue(UNCHECKED);
   jest.mocked(loadMarket).mockResolvedValue(EMPTY_MARKET);
   jest.mocked(cleanUnusedReceipts).mockResolvedValue(0);
 });
