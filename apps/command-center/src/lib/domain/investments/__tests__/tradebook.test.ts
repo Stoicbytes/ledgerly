@@ -5,7 +5,7 @@ import {
   planImport,
   readTradebook,
   tradeDate,
-} from '..';
+} from '../tradebookImport';
 import { EMPTY_PORTFOLIO, type Portfolio } from '../types';
 import { buy, fund, stock, trade } from '../__fixtures__';
 

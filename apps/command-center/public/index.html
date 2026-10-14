@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover: the safe-area insets reach the app (notches, home bar).
+         interactive-widget=resizes-content: the on-screen keyboard shrinks the page
+         instead of covering it, so a sheet's Save button stays above the keyboard. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <title>%WEB_TITLE%</title>
+    <meta name="theme-color" content="#EDEEF0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1A1B1E" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ledgerly" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!-- No inline scripts: the production CSP is script-src 'self'. Inline styles are allowed.
+         The react-native-web style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        overflow: hidden;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run Ledgerly.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

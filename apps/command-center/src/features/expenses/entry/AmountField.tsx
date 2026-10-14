@@ -70,8 +70,8 @@ export function AmountField({ inputRef }: { inputRef: RefObject<TextInput | null
                   inputRef.current?.focus();
                 }}
                 style={{
-                  minWidth: 40,
-                  height: 32,
+                  minWidth: 44,
+                  height: 44,
                   borderRadius: theme.radius.sm,
                   alignItems: 'center',
                   justifyContent: 'center',

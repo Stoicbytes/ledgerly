@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import {
   categoryPath,
   resolveCategory,
@@ -45,10 +44,26 @@ export function buildLookup(
 
 export type Lookup = ReturnType<typeof buildLookup>;
 
+let shared: { inputs: unknown[]; lookup: Lookup } | null = null;
+
+/**
+ * One lookup for the current ledger, shared by every caller: a list of 300 rows builds it
+ * once (share statuses walk every transaction), not once per row.
+ */
+export function sharedLookup(
+  accounts: Account[],
+  categories: Category[],
+  people: Person[],
+  transactions: Transaction[],
+): Lookup {
+  const inputs = [accounts, categories, people, transactions];
+  if (!shared || shared.inputs.some((input, index) => input !== inputs[index])) {
+    shared = { inputs, lookup: buildLookup(accounts, categories, people, transactions) };
+  }
+  return shared.lookup;
+}
+
 export function useLookup(): Lookup {
   const { accounts, categories, people, transactions } = useLedger();
-  return useMemo(
-    () => buildLookup(accounts, categories, people, transactions),
-    [accounts, categories, people, transactions],
-  );
+  return sharedLookup(accounts, categories, people, transactions);
 }

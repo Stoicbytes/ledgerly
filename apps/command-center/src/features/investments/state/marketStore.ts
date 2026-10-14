@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { EMPTY_MARKET, type MarketData } from '@/lib/domain/investments';
 import { loadMarket, refreshMarket, type RefreshResult } from '@/lib/data/marketRepository';
 import { RpcError } from '@/lib/data/rpc';
-import { seedPortfolio } from './seedPortfolio';
+import { samples } from '@/features/preview/samples';
+
+const sampleMarket = () => samples()?.seedPortfolio().market ?? EMPTY_MARKET;
 
 /**
  * Prices for the holdings: the labelled sample in preview mode; signed in, the public
@@ -59,7 +61,7 @@ export function refreshFailure(error: unknown): string {
 
 export const useMarketStore = create<MarketStore>((set, get) => ({
   mode: 'preview',
-  market: seedPortfolio().market,
+  market: sampleMarket(),
   loading: false,
   refreshing: false,
   notice: null,
@@ -90,6 +92,6 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
   },
 
   enterPreview: () =>
-    set({ mode: 'preview', market: seedPortfolio().market, notice: null, loading: false }),
+    set({ mode: 'preview', market: sampleMarket(), notice: null, loading: false }),
   enterCloud: () => set({ mode: 'cloud', market: EMPTY_MARKET, notice: null }),
 }));

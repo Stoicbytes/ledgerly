@@ -2,6 +2,7 @@ import { Pressable, View, type PressableProps } from 'react-native';
 import type { LucideIcon } from '../icons';
 import { useInteractionState } from '@/hooks/useInteractionState';
 import { minHitSize, useTheme } from '@/theme';
+import { HitArea } from './HitArea';
 import { TooltipBubble } from './TooltipBubble';
 
 type IconButtonProps = Omit<PressableProps, 'children' | 'style'> & {
@@ -74,6 +75,7 @@ export function IconButton({
           focused && { outlineColor: theme.colors.focus, outlineWidth: 2, outlineStyle: 'solid' },
         ]}
       >
+        <HitArea height={box} width={box} />
         <Icon size={size === 'sm' ? 15 : 17} color={iconColor} strokeWidth={1.9} />
       </Pressable>
       {tooltip && (hovered || focused) ? (

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import {
+  EMPTY_PORTFOLIO,
   keepsSharesCovered,
   keepsUnitsCovered,
-  type Additions,
   type Fund,
   type FundTxn,
   type Portfolio,
@@ -12,8 +12,11 @@ import {
   type ValidFundTxn,
   type ValidTrade,
 } from '@/lib/domain/investments';
+import type { Additions } from '@/lib/domain/investments/tradebookImport';
 import { newId } from '@/lib/ids';
-import { seedPortfolio } from './seedPortfolio';
+import { samples } from '@/features/preview/samples';
+
+const sample = (): Portfolio => samples()?.seedPortfolio().portfolio ?? EMPTY_PORTFOLIO;
 
 /**
  * Mutual funds and stocks. In preview mode it holds the labelled sample; signed in,
@@ -67,7 +70,7 @@ function upsert<T extends { id: string }>(items: T[], item: T): T[] {
 }
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
-  ...seedPortfolio().portfolio,
+  ...sample(),
 
   saveFund: (input, id) => {
     const existing = id ? get().funds.find((fund) => fund.id === id) : undefined;
@@ -187,7 +190,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       trades: [...state.trades, ...additions.trades],
     })),
   restorePortfolio: (portfolio) => set(portfolio),
-  resetPreview: () => set(seedPortfolio().portfolio),
+  resetPreview: () => set(sample()),
 }));
 
 export const getPortfolio = (): Portfolio => snapshot(usePortfolioStore.getState());

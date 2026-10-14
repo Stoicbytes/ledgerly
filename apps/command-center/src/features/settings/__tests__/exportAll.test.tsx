@@ -56,6 +56,8 @@ describe('export everything', () => {
     expect(exportFileName(new Date('2026-10-13T10:00:00Z'))).toBe(
       'ledgerly-export-2026-10-13.json',
     );
+    // Shortly after midnight the name uses the local date, not the UTC one.
+    expect(exportFileName(new Date(2026, 9, 14, 0, 30))).toBe('ledgerly-export-2026-10-14.json');
   });
 
   it('saves the file as JSON from Settings', async () => {

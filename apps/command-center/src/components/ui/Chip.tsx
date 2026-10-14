@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { useInteractionState } from '@/hooks/useInteractionState';
 import { minHitSize, useTheme } from '@/theme';
+import { HitArea } from './HitArea';
 import { Text } from './Text';
 
 type ChipProps = {
@@ -38,6 +39,7 @@ export function Chip({ label, selected = false, onPress, disabled }: ChipProps) 
         focused && { outlineColor: theme.colors.focus, outlineWidth: 2, outlineStyle: 'solid' },
       ]}
     >
+      <HitArea height={28} />
       <Text variant="label" color={selected ? 'onInk' : 'textSecondary'}>
         {label}
       </Text>

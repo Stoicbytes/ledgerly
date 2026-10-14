@@ -59,6 +59,13 @@ npm run web                  # or: npm run ios / npm run android
 Without the two Supabase values the app runs as a clearly labelled preview on sample data, with
 no sign-in. Checks and project structure: [`apps/command-center/README.md`](apps/command-center/README.md).
 
+## Install on your phone
+
+Open the web app in the phone's browser and sign in, then add it to the home screen: in Chrome
+on Android, menu → **Add to home screen** (or **Install app**); in Safari on iPhone, Share →
+**Add to Home Screen**. It opens full screen at the dashboard, with the Ledgerly icon. It needs a
+connection: there is no offline mode.
+
 ## Deployment
 
 - **Web (Vercel):** the project builds `apps/command-center` with its `vercel.json` (the Expo web

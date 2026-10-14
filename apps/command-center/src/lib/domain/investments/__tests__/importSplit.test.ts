@@ -1,4 +1,4 @@
-import { buildAdditions, planImport } from '..';
+import { buildAdditions, planImport } from '../tradebookImport';
 import type { TradebookTrade } from '../tradebook';
 import { EMPTY_PORTFOLIO, type Portfolio } from '../types';
 import { stock, trade } from '../__fixtures__';

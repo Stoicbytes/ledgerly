@@ -8,7 +8,7 @@ import {
   type Note,
 } from '@/lib/domain/notes';
 import { newId } from '@/lib/ids';
-import { seedNotes } from './seedNotes';
+import { samples } from '@/features/preview/samples';
 
 /**
  * Notes in memory. Signed in, cloud sync loads them and saves every change to the `notes`
@@ -44,7 +44,7 @@ type NotesState = {
 };
 
 export const useNotesStore = create<NotesState>((set, get) => ({
-  notes: seedNotes(),
+  notes: samples()?.seedNotes() ?? [],
   extras: true,
 
   saveNote: (draft, id) => {
@@ -127,5 +127,5 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   restoreNote: (note) =>
     set((state) => ({ notes: [note, ...state.notes.filter((item) => item.id !== note.id)] })),
 
-  resetPreview: () => set({ notes: seedNotes(), extras: true }),
+  resetPreview: () => set({ notes: samples()?.seedNotes() ?? [], extras: true }),
 }));

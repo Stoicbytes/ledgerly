@@ -14,6 +14,7 @@ import { fontFamily, useTheme } from '@/theme';
 import { useExpenseStore } from '../state/expenseStore';
 import { useExpenseUi } from '../state/expenseUi';
 import { CategoryTile } from './CategoryTile';
+import { FrequentCategories } from './FrequentCategories';
 import { GridRows } from './GridRows';
 import { createCategory, NewCategoryForm } from './NewCategory';
 import { SubcategoryStrip } from './SubcategoryStrip';
@@ -131,6 +132,13 @@ export function CategoryPicker({ kind, selectedId, onChoose, columns }: Category
         </View>
       ) : (
         <>
+          <FrequentCategories
+            kind={kind}
+            selectedId={selectedId}
+            withSubcategories={withSubcategories}
+            columns={columns}
+            onChoose={onChoose}
+          />
           <GridRows
             items={parents}
             columns={columns}

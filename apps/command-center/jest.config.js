@@ -1,6 +1,25 @@
+const preset = require('jest-expo/jest-preset');
+
+// jest-expo's Babel transform, plus import() → require() (see scripts/jest-dynamic-import.js).
+const SOURCE = '\\.[jt]sx?$';
+const [babelJest, babelOptions] = preset.transform[SOURCE];
+
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  transform: {
+    ...preset.transform,
+    [SOURCE]: [
+      babelJest,
+      {
+        ...babelOptions,
+        plugins: [
+          ...(babelOptions.plugins ?? []),
+          require.resolve('./scripts/jest-dynamic-import.js'),
+        ],
+      },
+    ],
+  },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // Screen tests render whole sheets; on 2-core CI runners with coverage the
   // first render in a file can pass Jest's 5 s default (seen on the category

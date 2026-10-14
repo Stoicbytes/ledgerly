@@ -89,6 +89,7 @@ function Choice({ label, selected, onPress, background, ring, children }: Choice
       role="radio"
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
+      aria-checked={selected}
       onPress={onPress}
       {...handlers}
       style={[

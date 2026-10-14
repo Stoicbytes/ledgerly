@@ -4,7 +4,7 @@ import { CalendarDays } from '@/components/icons';
 import { Text } from '@/components/ui';
 import { DatePicker } from '@/features/expenses/entry/DatePicker';
 import { useInteractionState } from '@/hooks/useInteractionState';
-import { dayLabel, isValidIsoDate } from '@/lib/domain/expenses';
+import { dayLabel, isValidIsoDate, todayIso } from '@/lib/domain/expenses';
 import { useTheme } from '@/theme';
 
 /** Labelled date that opens the month grid in place (forms in sheets). */
@@ -57,7 +57,7 @@ export function DateField({
       </Pressable>
       {open ? (
         <DatePicker
-          value={isValidIsoDate(value) ? value : new Date().toISOString().slice(0, 10)}
+          value={isValidIsoDate(value) ? value : todayIso()}
           onChoose={(date) => {
             onChange(date);
             setOpen(false);

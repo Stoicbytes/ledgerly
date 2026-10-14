@@ -106,6 +106,8 @@ function SegmentButton<T extends string>({
     <Pressable
       role="radio"
       accessibilityState={{ checked: selected }}
+      // React Native Web drops a false `checked`; radios need aria-checked="false" too.
+      aria-checked={selected}
       onPress={onPress}
       onLayout={(event) => onLayout(event.nativeEvent.layout)}
       {...handlers}
