@@ -104,10 +104,11 @@ You will share an export from the app you use today; the importer is built aroun
 upload, match its columns, a preview with duplicates flagged, then import. It runs on the server
 and the file is not kept. Export from Ledgerly comes with it, in the same shape.
 
-### Price updates live (done)
+### Price updates (built; the schedule is set up per project)
 
-`market-refresh` is deployed from GitHub Actions and runs every weekday at 23:45 and 07:00 IST
-(fund NAVs from AMFI and exchange closing prices at the same time), and on **Update prices**.
+`market-refresh` is deployed from GitHub Actions and runs on **Update prices**, and every weekday
+at 23:45 and 07:00 IST once its `pg_cron` schedule is set up (SUPABASE_SETUP.md, step 2 under
+Prices; fund NAVs from AMFI and exchange closing prices at the same time).
 Each run is logged in `market_refresh_runs`. AMFI's current eight-column file is read, and the
 function answers only the project's own web addresses.
 
@@ -222,8 +223,9 @@ quick add for anything.
 - **App lock** with Face ID / fingerprint on phones; **privacy mode** that hides amounts.
 - Installable web app; home-screen widgets on phones.
 - **Incremental sync** (changes since a cursor) and per-area loading when data grows; offline cache.
-- ~~Export everything as JSON~~ (done). Next: scheduled encrypted backups, an import of that
-  file, account deletion.
+- ~~Export everything as JSON~~, ~~restore from that file~~ and ~~scheduled encrypted database
+  backups~~ (done: Settings → Restore from backup, `.github/workflows/db-backup.yml`). Next:
+  account deletion.
 
 ### Hardening and performance
 

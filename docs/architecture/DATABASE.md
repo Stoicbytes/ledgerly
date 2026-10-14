@@ -93,7 +93,10 @@ small scan.
 - Contact-form rate-limit hashes are deleted after a day; preview links expire after 20 minutes;
   contact messages stay until the owner deletes them.
 - Price history is kept only for schemes and shares someone holds.
-- Account deletion and data export are not built yet. Today a full deletion is done by the
-  project owner in the Supabase dashboard (database rows and the `receipts` and
-  `portfolio-media` files).
+- Account deletion is not built yet. Today a full deletion is done by the project owner in the
+  Supabase dashboard (database rows and the `receipts` and `portfolio-media` files).
+- Data export and restore: Settings → **Export everything** (one JSON file) and **Restore from
+  backup** (adds a file's missing records through `sync_ledger`; never deletes). Database-level
+  backups: the daily encrypted `pg_dump` in `.github/workflows/db-backup.yml` (see
+  SUPABASE_SETUP.md → Backups and restore), or Supabase's own backups on paid plans.
 - Receipt files no entry uses are deleted by the app at a later sign-in once they are a day old.
