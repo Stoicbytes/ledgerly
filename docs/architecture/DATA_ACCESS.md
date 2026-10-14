@@ -107,6 +107,10 @@ entries.
 
 ## Remaining
 
+- The `market-refresh` function accepts any signed-in user's token for a manual refresh
+  (it checks the token with Supabase Auth, not the allowlist or two-step sign-in). It only
+  refreshes public prices and is limited by its own minimum interval, but it is not yet
+  restricted to allowlisted accounts.
 - Q1 loads all history at once. At personal scale this is one small request; after many years
   it should move to loading by period (the roadmap's incremental sync).
 - Data changed on another device appears when you come back to the app, not while you are

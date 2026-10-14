@@ -21,7 +21,11 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 - **State:** `useSession` (`loading` / `signedOut` / `needsCode` / `signedIn` / `preview`); the
   dashboard layout redirects on it; the database enforces it anyway.
 - **Edge cases:** expired session → stores cleared and sign-in shown; signing out with unsent
-  changes asks first; idle sign-out sends pending changes first.
+  changes asks first; idle sign-out sends pending changes first. Auto idle sign-out: 30 minutes,
+  or 8 hours on a device kept signed in; Never only when chosen.
+- **Database rules (0019):** an account whose email is not on the allowlist, or a password-only
+  session once two-step sign-in is on, gets nothing from any table, file or function;
+  `supabase/tests/access_rules.sql` checks it in CI.
 
 ## Expenses (transactions, accounts, categories, budgets, people)
 
@@ -165,7 +169,9 @@ added before anything is saved:
   so importing the same file twice adds nothing.
 - **Large files:** at most 4,000 entries per import (one save takes up to 5,000 rows); the
   oldest go first and importing the same file again adds the rest. Files over 5 MB, and old
-  .xls files, are refused with what to do instead.
+  .xls files, are refused with what to do instead. An .xlsx that unpacks to more than 50 MB, or
+  whose sheet goes past row 100,000 or column 200, is refused too (`lib/files/`), so a crafted
+  file cannot freeze the tab.
 
 **Import** plans again against the ledger as it is at that moment, so a double press or edits
 made meanwhile add no duplicates. **Undo import** (while the card is open) removes exactly the

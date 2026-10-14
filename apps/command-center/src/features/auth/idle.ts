@@ -5,9 +5,13 @@ export const IDLE_WARNING_MS = 2 * 60_000;
 
 export type IdlePhase = 'active' | 'warning' | 'expired';
 
+/** Auto on a device that keeps you signed in: 8 hours, so a forgotten session still ends. */
+const KEPT_IDLE_MINUTES = 480;
+export const KEPT_IDLE_TIMEOUT_MS = KEPT_IDLE_MINUTES * 60_000;
+
 /**
- * The owner's choice per device. `auto`: never on a device that keeps you signed in
- * (two-step sign-in guards new devices), otherwise 30 minutes.
+ * The owner's choice per device. `auto`: 8 hours on a device that keeps you signed in,
+ * otherwise 30 minutes. `never` only when chosen explicitly.
  */
 export type IdleChoice = 'auto' | '15' | '60' | '480' | 'never';
 const IDLE_CHOICES = ['auto', '15', '60', '480', 'never'] as const;
@@ -17,7 +21,7 @@ export const isIdleChoice = (value: unknown): value is IdleChoice =>
 /** The timeout in milliseconds, or null for no automatic sign-out. */
 export function idleTimeoutMs(choice: IdleChoice, keptSignedIn: boolean): number | null {
   if (choice === 'never') return null;
-  if (choice === 'auto') return keptSignedIn ? null : IDLE_TIMEOUT_MS;
+  if (choice === 'auto') return keptSignedIn ? KEPT_IDLE_TIMEOUT_MS : IDLE_TIMEOUT_MS;
   return Number(choice) * 60_000;
 }
 

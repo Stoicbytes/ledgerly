@@ -22,7 +22,7 @@ export function DeviceSignInCard({ index }: { index: number }) {
   const choice = useDevicePrefs((state) => state.idleChoice);
   const setChoice = useDevicePrefs((state) => state.setIdleChoice);
   const auto = keep
-    ? 'Auto: stays signed in on this device, which you marked as your own.'
+    ? 'Auto: signs out after 8 hours without activity on this device, which you marked as your own.'
     : 'Auto: signs out after 30 minutes without activity.';
   return (
     <Card index={index} style={{ gap: theme.space[3] }}>
