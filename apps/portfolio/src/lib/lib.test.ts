@@ -59,6 +59,15 @@ describe('document parsing', () => {
     expect(normalizeDocument('nonsense')).toBeNull();
   });
 
+  it('keeps a plain email and drops one that could add mailto: parameters', () => {
+    expect(doc.profile.email).toBe('sam@example.com');
+    const bad = normalizeDocument({
+      ...rawDocument,
+      profile: { ...rawDocument.profile, email: 'sam@example.com?cc=x@example.com' },
+    });
+    expect(bad!.profile.email).toBe('');
+  });
+
   it('never invents numbers for counters', () => {
     const d = normalizeDocument({ ...rawDocument, facts: [{ kind: 'stat', label: 'Years' }] })!;
     expect(d.facts).toEqual([]);

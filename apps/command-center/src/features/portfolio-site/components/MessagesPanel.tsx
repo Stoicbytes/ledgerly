@@ -4,6 +4,7 @@ import { useToast } from '@/components/feedback';
 import { Mail, Trash2 } from '@/components/icons';
 import { ConfirmSheet } from '@/components/overlays';
 import { Badge, Button, Card, IconButton, Text } from '@/components/ui';
+import { replyMailto } from '@/lib/domain/site/mailto';
 import { useTheme } from '@/theme';
 import { siteErrorMessage } from '../state/siteErrors';
 import { useSiteStore } from '../state/siteStore';
@@ -79,9 +80,7 @@ export function MessagesPanel() {
               variant="secondary"
               onPress={() => {
                 void run(() => markMessage(message.id, true));
-                void Linking.openURL(
-                  `mailto:${message.email}?subject=${encodeURIComponent('Re: your message')}`,
-                );
+                void Linking.openURL(replyMailto(message.email, 'Re: your message'));
               }}
             />
             <Button

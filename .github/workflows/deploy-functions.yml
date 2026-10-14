@@ -1,15 +1,19 @@
 name: Deploy Edge Functions
 
-# Deploys supabase/functions to the Supabase project when they change on main.
+# Deploys supabase/functions to the Supabase project after CI has passed on main, from the
+# exact commit CI checked (every passing main build redeploys; deploying an unchanged
+# function is harmless). The CLI version is pinned, and so is the setup action (by commit),
+# so a new upstream release cannot change what runs here without a reviewed edit.
 # Needs two repository secrets (Settings → Secrets and variables → Actions):
 #   SUPABASE_ACCESS_TOKEN  a personal access token from supabase.com/dashboard/account/tokens
 #   SUPABASE_PROJECT_REF   the project ref (the part before .supabase.co)
 # Without them the job only prints how to set it up.
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths: ['supabase/functions/**', 'supabase/config.toml']
   workflow_dispatch:
 
 permissions:
@@ -23,6 +27,11 @@ jobs:
   deploy:
     name: Deploy market-refresh
     runs-on: ubuntu-latest
+    # Only a CI run that succeeded for a push to main (or a manual run).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
@@ -32,10 +41,13 @@ jobs:
         run: echo "::notice::Add the SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF secrets to deploy Edge Functions automatically (see SUPABASE_SETUP.md)."
       - uses: actions/checkout@v4
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
-      - uses: supabase/setup-cli@v1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # supabase/setup-cli v1.7.3, pinned by commit.
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
         with:
-          version: latest
+          version: 2.119.0
       - name: Deploy
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
         run: supabase functions deploy market-refresh --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt

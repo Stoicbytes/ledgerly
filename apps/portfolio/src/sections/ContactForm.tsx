@@ -10,7 +10,7 @@ import type { SiteConfig } from '../lib/config';
 type Fields = { name: string; email: string; message: string };
 type Status = 'idle' | 'sending' | ContactResult | 'network';
 
-const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
+const EMAIL = /^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,63}$/;
 const MESSAGE_MAX = 4000;
 
 function validate(fields: Fields): Partial<Record<keyof Fields, string>> {

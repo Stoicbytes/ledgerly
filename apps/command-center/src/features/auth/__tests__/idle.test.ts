@@ -1,4 +1,10 @@
-import { IDLE_TIMEOUT_MS, IDLE_WARNING_MS, idlePhase, idleTimeoutMs } from '../idle';
+import {
+  IDLE_TIMEOUT_MS,
+  IDLE_WARNING_MS,
+  KEPT_IDLE_TIMEOUT_MS,
+  idlePhase,
+  idleTimeoutMs,
+} from '../idle';
 
 describe('idlePhase', () => {
   const start = 1_000_000;
@@ -17,8 +23,9 @@ describe('idlePhase', () => {
 });
 
 describe('idleTimeoutMs', () => {
-  it('never signs out on a kept device on Auto, 30 minutes otherwise', () => {
-    expect(idleTimeoutMs('auto', true)).toBeNull();
+  it('signs out after 8 hours on a kept device on Auto, 30 minutes otherwise', () => {
+    expect(idleTimeoutMs('auto', true)).toBe(8 * 60 * 60_000);
+    expect(KEPT_IDLE_TIMEOUT_MS).toBe(8 * 60 * 60_000);
     expect(idleTimeoutMs('auto', false)).toBe(IDLE_TIMEOUT_MS);
   });
   it('follows an explicit choice on any device', () => {

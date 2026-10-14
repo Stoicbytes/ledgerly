@@ -1,4 +1,5 @@
 import { shownFields, type FieldSpec } from './fields';
+import { EMAIL_PATTERN } from './mailto';
 import type { EditKind, GalleryItem, Row, SectionItem, Values } from './types';
 
 /**
@@ -13,7 +14,7 @@ const FORMATS: Record<string, [RegExp, string]> = {
     'Lowercase letters, numbers and single dashes, like my-project.',
   ],
   handle: [/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/, '3 to 40 lowercase letters, numbers or dashes.'],
-  email: [/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/, 'Enter an email address like name@example.com.'],
+  email: [EMAIL_PATTERN, 'Enter an email address like name@example.com.'],
   timezone: [/^[A-Za-z]+(\/[A-Za-z0-9_+-]+){1,2}$/, 'Use a time zone name like Asia/Kolkata.'],
 };
 

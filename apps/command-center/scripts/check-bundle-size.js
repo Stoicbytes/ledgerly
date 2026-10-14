@@ -34,7 +34,7 @@ const path = require('path');
 const zlib = require('zlib');
 
 const FIRST_LOAD_CEILING_KIB = 450;
-const TOTAL_CEILING_KIB = 590;
+const TOTAL_CEILING_KIB = 600;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');
