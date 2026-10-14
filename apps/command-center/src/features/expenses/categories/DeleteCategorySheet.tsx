@@ -103,6 +103,7 @@ function Option({ label, category, selected, onPress }: OptionProps) {
       role="radio"
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
+      aria-checked={selected}
       onPress={onPress}
       {...handlers}
       style={[

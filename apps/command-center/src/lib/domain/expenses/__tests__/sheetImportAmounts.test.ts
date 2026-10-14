@@ -1,4 +1,4 @@
-import { planSheetImport, readAmount, readExpenseSheet, SKIP_REASONS } from '..';
+import { planSheetImport, readAmount, readExpenseSheet, SKIP_REASONS } from '../sheetImports';
 
 describe('amounts with a currency word', () => {
   it('strips ₹, Rs, Rs. and INR before reading the number', () => {

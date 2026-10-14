@@ -45,6 +45,7 @@ export function ThemeCapsule() {
         icon={Sun}
         role="radio"
         accessibilityState={{ checked: theme.scheme === 'light' }}
+        aria-checked={theme.scheme === 'light'}
         accessibilityLabel="Light theme"
         selected={theme.scheme === 'light'}
         tooltip="right"
@@ -54,6 +55,7 @@ export function ThemeCapsule() {
         icon={Moon}
         role="radio"
         accessibilityState={{ checked: theme.scheme === 'dark' }}
+        aria-checked={theme.scheme === 'dark'}
         accessibilityLabel="Dark theme"
         selected={theme.scheme === 'dark'}
         tooltip="right"

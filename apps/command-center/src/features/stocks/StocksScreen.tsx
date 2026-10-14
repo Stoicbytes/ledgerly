@@ -15,7 +15,7 @@ import { Screen, useFitMode } from '@/components/layout/Screen';
 import { StatStrip } from '@/components/layout/StatStrip';
 import { Button, Card, StatCard } from '@/components/ui';
 import { PriceStatus, RefreshPricesButton } from '@/features/investments/components/PriceStatus';
-import { ImportTradebookButton } from '@/features/investments/import/ImportTradebookSheet';
+import { ImportTradebookButton } from '@/features/investments/import/ImportTradebookButton';
 import { useStocksView } from '@/features/investments/hooks/useInvestments';
 import { SampleDataBadge } from '@/features/preview/SampleDataBadge';
 import { formatMoneyWhole, formatPercent } from '@/lib/formatting/currency';

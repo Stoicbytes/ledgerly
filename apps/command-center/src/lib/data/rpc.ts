@@ -98,11 +98,35 @@ export async function currentSession(): Promise<{ token: string; userId: string 
   return { token: session.access_token, userId };
 }
 
+let lastFailure: RpcError | null = null;
+
+/**
+ * The last request that failed (status and code only), so a screen can say whether the
+ * server is not responding or the device is offline. Cleared by the next success.
+ */
+export const lastRequestFailure = (): RpcError | null => lastFailure;
+
 async function post<T>(
   path: string,
   body: Record<string, unknown>,
   timeoutMs: number,
   keepalive = false,
+): Promise<T> {
+  try {
+    const result = await send<T>(path, body, timeoutMs, keepalive);
+    lastFailure = null;
+    return result;
+  } catch (error) {
+    lastFailure = error instanceof RpcError ? error : null;
+    throw error;
+  }
+}
+
+async function send<T>(
+  path: string,
+  body: Record<string, unknown>,
+  timeoutMs: number,
+  keepalive: boolean,
 ): Promise<T> {
   const token = (await signedInSession())?.access_token;
   if (!token || !supabaseConfig) throw new RpcError(401, 'no_session');

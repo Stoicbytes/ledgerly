@@ -6,6 +6,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { formatAxisMoney, formatMoneyWhole } from '@/lib/formatting/currency';
 import { useTransactionForm } from '@/features/expenses/state/transactionForm';
 import { useTheme } from '@/theme';
+import { PricesAsOf } from './PricesAsOf';
 import type { OverviewData } from './useOverviewData';
 
 export function NetWorthCard({ data }: { data: OverviewData }) {
@@ -24,6 +25,12 @@ export function NetWorthCard({ data }: { data: OverviewData }) {
           variant="figure"
           numberOfLines={1}
           adjustsFontSizeToFit
+        />
+        <PricesAsOf
+          kinds={[
+            ...(data.funds.count ? (['funds'] as const) : []),
+            ...(data.stocks.count ? (['stocks'] as const) : []),
+          ]}
         />
         <Delta value={data.savings} format="money" variant="pill" comparison="saved this month" />
         {data.pf || data.cardDue || data.leftOut.length ? (

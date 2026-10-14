@@ -6,6 +6,8 @@ import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { useMotion, useTheme } from '@/theme';
 import { IconButton } from '../ui/IconButton';
 import { Text } from '../ui/Text';
+import { useKeyboardInset } from './useKeyboardInset';
+import { useReturnFocus } from './useReturnFocus';
 
 export type SheetProps = {
   visible: boolean;
@@ -37,6 +39,8 @@ export function Sheet({
   const insets = useSafeAreaInsets();
   const { isMobile } = useBreakpoint();
   const { reduceMotion } = useMotion();
+  useReturnFocus(visible);
+  const keyboard = useKeyboardInset(visible && isMobile);
 
   return (
     <Modal
@@ -76,7 +80,8 @@ export function Sheet({
             borderTopRightRadius: theme.radius.xl,
             borderBottomLeftRadius: isMobile ? 0 : theme.radius.xl,
             borderBottomRightRadius: isMobile ? 0 : theme.radius.xl,
-            paddingBottom: isMobile ? insets.bottom : 0,
+            // Above the on-screen keyboard (iPhone Safari), else above the home indicator.
+            paddingBottom: isMobile ? Math.max(insets.bottom, keyboard) : 0,
             ...theme.elevation(3),
           }}
         >

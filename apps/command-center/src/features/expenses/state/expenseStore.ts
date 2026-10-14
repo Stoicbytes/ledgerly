@@ -11,9 +11,7 @@ import {
 } from '@/lib/domain/expenses';
 import { newId } from '@/lib/ids';
 import { useRecurringStore } from './recurringStore';
-import { seedAccounts, seedCategories } from './seedCatalog';
-import { seedPeople, withSampleSplits } from './seedPeople';
-import { seedTransactions } from './seedTransactions';
+import { samples } from '@/features/preview/samples';
 
 /**
  * PREVIEW DATA SOURCE (in memory, resets on reload). Every action mirrors a
@@ -59,12 +57,9 @@ type ExpenseStore = Ledger & {
   resetPreview: () => void;
 };
 
-const seed = (): Ledger => ({
-  accounts: seedAccounts(),
-  categories: seedCategories(),
-  transactions: withSampleSplits(seedTransactions()),
-  people: seedPeople(),
-});
+/** The sample ledger once it has loaded (preview mode only), else nothing. */
+const seed = (): Ledger =>
+  samples()?.sampleLedger() ?? { accounts: [], categories: [], transactions: [], people: [] };
 
 const nextOrder = (items: { order: number }[]) =>
   items.reduce((max, item) => Math.max(max, item.order + 1), 0);

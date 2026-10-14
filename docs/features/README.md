@@ -73,6 +73,16 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 - **Default view:** the calendar, on every screen size. Tapping an empty day opens **Add** on
   that date. Tapping a day with entries shows them in the day panel; tapping it again (or the
   panel's **Add**) opens **Add** on that date.
+- **Fast entry:** a new entry starts with the type and, per type, the account used last; both
+  are remembered on this device (`state/lastEntry.ts`, device preferences, ids only) and an
+  account that no longer exists is skipped. The category picker shows **Used most**: the 4–6
+  categories with the most entries in the last 90 days (`frequentCategories` in
+  `lib/domain/expenses/frequent.ts`, tested), above the full grid.
+- **Long lists:** rows share one lookup per ledger (`sharedLookup` in `hooks/useLedger.ts`; the
+  share statuses walk every entry, so building it per row made big months slow) and are
+  memoised. On the web the Daily list and search results render 40 rows, then more as you scroll
+  near the end or press **Show more** (`components/layout/RevealMore.tsx`; the page itself scrolls,
+  so a virtualised list cannot be used). Search runs once typing pauses for 150 ms.
 - **Edge cases:** validation in the form and the database; a double tap on Save adds one entry.
   Flows in detail:
   [`../architecture/EXPENSE_MANAGER_FLOW.md`](../architecture/EXPENSE_MANAGER_FLOW.md).
@@ -190,6 +200,12 @@ since uses them. Web only for now (phones need a file picker). Code:
 - **Access:** Mutual funds, Stocks, **Import**, **Update prices**.
 - **Code:** `features/mutual-funds/`, `features/stocks/`, `features/investments/` (stores, hooks,
   import), rules in `lib/domain/investments/`, prices from `supabase/functions/market-refresh`.
+- **Price status:** under each page's title, "NAVs as of …" / "Closing prices as of …", with a
+  warning when they are older than the last weekday (exchange holidays are not known, so the day
+  after one may warn) or when the latest update run failed (its message, with web addresses and
+  long keys removed). Code: `lib/domain/investments/freshness.ts` (tested),
+  `investments/components/PriceStatus.tsx`.
+- **Loading:** the tradebook import sheet, and the .xlsx/.csv readers, load only when used.
 - **Guide:** [`INVESTMENTS.md`](INVESTMENTS.md).
 
 ## Overview
@@ -203,6 +219,8 @@ since uses them. Web only for now (phones need a file picker). Code:
   shares, because those are valued at market price on the investment pages; the Net worth card
   names it and Accounts marks it "Not in net worth". Rename the account to change this. Code:
   `lib/domain/expenses/netWorth.ts` (tested).
+  With funds or shares, "Prices as of …" under the figure gives the older of their price dates
+  (`PricesAsOf.tsx`), marked when out of date.
 - **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
   card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
   course (spent so far plus what the rest of a month usually costs, `projectMonthEnd`), the category that rose most, how many months your cash covers, recurring entries due
@@ -234,3 +252,26 @@ since uses them. Web only for now (phones need a file picker). Code:
   writer is shared with the CV (`lib/files/pdf/`).
 - **Data:** none of its own; reads the expense, portfolio and salary stores. Nothing leaves the
   device to build it.
+
+## On a phone (web app)
+
+- **Install:** `public/manifest.webmanifest` (name, `/dashboard` start, standalone, icons from
+  `assets/` made by `scripts/make-web-icons.py`) and `public/index.html`, the page template Expo
+  uses for this single-page export (`+html.tsx` is only used by static or server output). No
+  inline scripts (the CSP is `script-src 'self'`). There is no service worker: no offline mode.
+- **Keyboard:** the viewport uses `interactive-widget=resizes-content`, so Android Chrome shrinks
+  the page above the keyboard; on iPhone Safari bottom sheets add the keyboard's height as
+  padding (`components/overlays/useKeyboardInset.ts`) so **Save** stays visible.
+- **First download:** the preview's sample data (`features/preview/sampleData.ts`), the
+  spreadsheet readers, the CV's PDF and Word writers and the tradebook import load with
+  `import()` when needed; signed-in users never download the sample data. The report PDF writer
+  is still part of the first download (the Reports screen calls it directly).
+- **Loading errors:** if your data cannot be loaded, the message says whether you are offline or
+  the server is not responding (5xx, timeouts, e.g. a paused Supabase project), with **Try
+  again**; coming back online retries by itself (`features/sync/CloudGate.tsx`, `loadError.ts`).
+- **Database updates needed:** signed in, Settings lists features hidden because their migration
+  has not been run (0012 recurring, 0013 goals, 0015 note reminders, 0016 salary, 0018 reset,
+  the last once a reset has been tried), with the file names (`features/settings/dbUpdates.ts`).
+- **Accessibility:** small controls (icon buttons, chips, small buttons) get a 44 px touch area
+  on the web too (`components/ui/HitArea.tsx`; React Native Web ignores `hitSlop`); radios set
+  `aria-checked` explicitly; a closed sheet returns focus to the control that opened it.

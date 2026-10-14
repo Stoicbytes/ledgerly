@@ -1,4 +1,4 @@
-import { Children, useState, type ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { useTheme, type Breakpoint } from '@/theme';
@@ -23,25 +23,33 @@ export function columnsFor(
   return Math.max(1, Math.floor(resolved));
 }
 
-/** Wrapping grid whose column count is chosen per breakpoint (layouts are designed, not shrunk). */
+/**
+ * Grid whose column count is chosen per breakpoint (layouts are designed, not shrunk).
+ * Rows of equal flex cells: the count comes from the window width, so the first render
+ * already has its final layout (no full-width frame before the grid measures itself).
+ */
 export function ResponsiveGrid({
   children,
   columns = { sm: 1, md: 2, lg: 3 },
 }: ResponsiveGridProps) {
   const theme = useTheme();
   const { breakpoint } = useBreakpoint();
-  const [width, setWidth] = useState(0);
   const count = columnsFor(breakpoint, columns);
   const gap = theme.space[4];
-  const itemWidth = width > 0 ? (width - gap * (count - 1)) / count : undefined;
+  const items = Children.toArray(children);
+  const rows: ReactNode[][] = [];
+  for (let index = 0; index < items.length; index += count) {
+    rows.push(items.slice(index, index + count));
+  }
   return (
-    <View
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-      style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
-    >
-      {Children.toArray(children).map((child, index) => (
-        <View key={index} style={itemWidth ? { width: itemWidth } : { width: '100%' }}>
-          {child}
+    <View style={{ gap }}>
+      {rows.map((row, rowIndex) => (
+        <View key={rowIndex} style={{ flexDirection: 'row', gap }}>
+          {Array.from({ length: count }, (_, index) => (
+            <View key={index} style={{ flex: 1, minWidth: 0 }}>
+              {row[index] ?? null}
+            </View>
+          ))}
         </View>
       ))}
     </View>
