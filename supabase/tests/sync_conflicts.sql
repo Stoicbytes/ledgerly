@@ -6,6 +6,9 @@ begin;
 insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-0000000000a1', 'one@example.com'),
   ('00000000-0000-4000-8000-0000000000b2', 'two@example.com');
+-- Since 0019 only allowlisted accounts can read or write.
+insert into internal.auth_allowlist (email) values ('one@example.com'), ('two@example.com')
+  on conflict do nothing;
 
 create temporary table seen (name text primary key, value text);
 grant all on seen to authenticated;

@@ -7,7 +7,7 @@ export const PRICE_SOURCE_LABEL: Record<PriceSource, string> = {
   amfi: 'AMFI',
   exchange: 'exchange',
   manual: 'entered by hand',
-  'last entry': 'from your last entry',
+  'last entry': 'estimated (no market price)',
 };
 
 export type SummaryItem = {

@@ -41,7 +41,8 @@ const transactions = [
   spend('food', 5_000_00),
   spend('tea', 2_200_00), // subcategory counts toward Food: 7,200 of 6,000
   spend('fuel', 2_500_00), // 83%
-  spend('fun', 2_000_00), // 40% by the 10th: on course for 6,200
+  spend('fun', 2_000_00), // 40% by the 10th
+  spend('fun', 4_500_00, '2026-09-20'), // the rest of September cost 4,500: about 6,500
   spend('rent', 1_000_00),
   spend('misc', 9_000_00), // no budget: never an alert
   spend('food', 50_000_00, '2026-09-10'), // last month does not count
@@ -55,7 +56,7 @@ describe('budget alerts', () => {
       ['Fuel', 'near'],
       ['Fun', 'pace'],
     ]);
-    expect(alerts[2].projected).toBe(6_200_00);
+    expect(alerts[2].projected).toBe(6_500_00);
   });
 
   it('waits a week before calling the pace', () => {
@@ -67,7 +68,7 @@ describe('budget alerts', () => {
     const alerts = budgetAlerts(categories, transactions, '2026-10-10');
     expect(alertText(alerts[0])).toBe('Food is ₹1,200 over its ₹6,000 budget');
     expect(alertText(alerts[1])).toBe('Fuel has used 83% of its ₹3,000 budget');
-    expect(alertText(alerts[2])).toBe('Fun is on course for ₹6,200 against a ₹5,000 budget');
+    expect(alertText(alerts[2])).toBe('Fun is on course for about ₹6,500 against a ₹5,000 budget');
     const exact = budgetAlerts(categories, [spend('rent', 10_000_00)], '2026-10-10');
     expect(exact.map((alert) => alert.level)).toEqual(['near']);
     expect(alertText(exact[0])).toBe('Rent has used all of its ₹10,000 budget');

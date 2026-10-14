@@ -25,7 +25,11 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 - **State:** `useSession` (`loading` / `signedOut` / `needsCode` / `signedIn` / `preview`); the
   dashboard layout redirects on it; the database enforces it anyway.
 - **Edge cases:** expired session → stores cleared and sign-in shown; signing out with unsent
-  changes asks first; idle sign-out sends pending changes first.
+  changes asks first; idle sign-out sends pending changes first. Auto idle sign-out: 30 minutes,
+  or 8 hours on a device kept signed in; Never only when chosen.
+- **Database rules (0019):** an account whose email is not on the allowlist, or a password-only
+  session once two-step sign-in is on, gets nothing from any table, file or function;
+  `supabase/tests/access_rules.sql` checks it in CI.
 
 ## Expenses (transactions, accounts, categories, budgets, people)
 
@@ -40,7 +44,9 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
 - **State:** `useExpenseStore` holds the ledger; screens compute balances, totals and budgets
   from it (pure functions, tested).
 - **Budget alerts:** a category with a monthly budget is flagged when it is over, when 80% or
-  more is used, or (from the 7th) when this month's daily rate would pass it by month-end;
+  more is used, or (from the 7th) when it is on course to pass it: spent so far plus what the
+  rest of a month usually costs in that category (the median of the last three months with
+  entries; no pace alert without them), so rent on the 1st is not multiplied over the month;
   subcategories count toward their parent. They show on Expenses → Budget (current month) and
   as one Overview insight. Code: `budgetAlerts` in `lib/domain/expenses/budgets.ts`,
   `budget/BudgetAlertsCard.tsx`, `features/overview/budgetInsight.ts`.
@@ -101,7 +107,9 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   less withdrawals; pension (EPS) is shown apart because it is not a withdrawable balance. Each
   payslip adds its month's contribution. Interest counts only once entered from the passbook (the
   rate EPFO declared for that year); the app estimates it the EPFO way (monthly balances at a
-  twelfth of the rate) to check against, and lists finished years still missing it. Opening
+  twelfth of the rate, each contribution counted from the month after its wage month, when it is
+  deposited, so March wages earn nothing that year) to check against the passbook, and lists
+  finished years still missing it. Opening
   balances, withdrawals and months without a payslip are entered by hand. PF counts in net worth.
 - **Privacy:** no UAN, member ID, PAN or other identity number is asked for or stored.
 - **Code:** `features/salary/` (screen, sheets, `state/`), `lib/domain/salary/` (pay totals,
@@ -143,8 +151,10 @@ added before anything is saved:
 - **Dates:** Excel dates, `2026-08-14 10:49`, `14/08/2026` or `8/14/26 7:05 PM`. Whether text
   dates are day-first or month-first is decided from the whole file (day-first when it cannot
   tell). Dates outside 1900–2100 are left out.
-- **Amounts:** numbers or text such as `₹1,234.50`; zero, negative or unreadable amounts are
-  left out.
+- **Amounts:** numbers or text such as `₹1,234.50`, `Rs. 1,500.00`, `INR 500` or `Rs 500/-`
+  (a leading or trailing ₹, Rs, Rs. or INR is dropped first); zero, negative or unreadable
+  amounts are left out, and so are European decimals such as `1.234,50` (not guessed). Notes
+  keep up to 500 characters (the database's limit; typed notes have the same limit).
 - **Emoji:** left out of account, category and subcategory names (notes keep them). An entry
   whose category is only an emoji is imported uncategorised (or under its parent category).
 - **Accounts and categories:** matched to yours by name (ignoring case, spaces and emoji); missing ones
@@ -156,13 +166,16 @@ added before anything is saved:
 - **Balance corrections** ("Modified Bal."): added to the opening balance of an account the
   import creates (Income Balance raises it, Expense Balance lowers it), so totals stay clean.
   For an account you already had they are left out: set its balance in Accounts.
-- **Left out, with the reason:** unknown types, transfers without two accounts, corrections for
+- **Left out, with the reason:** unknown types, transfers without two accounts, transfers whose
+  two accounts are the same once emoji are left out ("HDFC" and "HDFC 💳"), corrections for
   existing accounts, unreadable dates or amounts.
 - **Already there:** entries with the same day, type, amount, account(s) and note are skipped,
   so importing the same file twice adds nothing.
 - **Large files:** at most 4,000 entries per import (one save takes up to 5,000 rows); the
   oldest go first and importing the same file again adds the rest. Files over 5 MB, and old
-  .xls files, are refused with what to do instead.
+  .xls files, are refused with what to do instead. An .xlsx that unpacks to more than 50 MB, or
+  whose sheet goes past row 100,000 or column 200, is refused too (`lib/files/`), so a crafted
+  file cannot freeze the tab.
 
 **Import** plans again against the ledger as it is at that moment, so a double press or edits
 made meanwhile add no duplicates. **Undo import** (while the card is open) removes exactly the
@@ -183,10 +196,16 @@ since uses them. Web only for now (phones need a file picker). Code:
 
 - **Purpose:** the whole picture at a glance: net worth (accounts, funds, shares, PF), insights,
   cash flow, budget use, recent activity.
-- **Net worth:** credit card accounts are left out; what is owed on them shows as an insight.
+- **Net worth:** accounts (Savings & investments included: PPF, FD, RD), funds, shares and PF.
+  Credit card accounts are left out; what is owed on them shows as an insight. A Savings &
+  investments account whose name says it holds mutual funds (mutual fund, MF, SIP, ELSS,
+  equity) or shares (stocks, shares, demat, equity, broker) is left out while you track funds or
+  shares, because those are valued at market price on the investment pages; the Net worth card
+  names it and Accounts marks it "Not in net worth". Rename the account to change this. Code:
+  `lib/domain/expenses/netWorth.ts` (tested).
 - **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
   card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
-  course, the category that rose most, how many months your cash covers, recurring entries due
+  course (spent so far plus what the rest of a month usually costs, `projectMonthEnd`), the category that rose most, how many months your cash covers, recurring entries due
   this week, the last salary and TDS this financial year, the largest expense. Nothing leaves
   the device for this. Code: `features/overview/insights.ts` (tested), `InsightsCard.tsx`.
 - **Access:** `/dashboard`.

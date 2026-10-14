@@ -44,6 +44,7 @@ const REQUIRED = ['period', 'accounts', 'category', 'amount', 'income/expense'] 
 export const SKIP_REASONS = {
   type: 'The type is not income, expense, transfer or a balance correction.',
   transfer: 'The transfer does not name two different accounts (the other one goes in Category).',
+  sameAccount: 'The transfer goes to the same account (the names match once emoji are left out).',
   balance:
     'Balance corrections only set the opening balance of accounts this import creates: set an existing account in Accounts.',
   date: 'The date could not be read.',
@@ -53,11 +54,28 @@ export const SKIP_REASONS = {
 const text = (cell: Cell | undefined) =>
   cell === null || cell === undefined ? '' : String(cell).trim();
 
-/** "₹1,234.50", "1,234.50 INR" or a number → paise; NaN when it is not an amount. */
+/** A currency word or sign before or after the number: ₹, Rs, Rs., INR (any case). */
+const CURRENCY_BEFORE = /^(?:₹|rs\.?|inr)\s*/i;
+const CURRENCY_AFTER = /\s*(?:₹|rs\.?|inr)$/i;
+
+/**
+ * "₹1,234.50", "Rs. 1,500.00", "INR 500", "1,234.50 INR", "Rs. 500/-" or a number → paise;
+ * NaN when it is not an amount. Commas group thousands (Indian or Western); a comma after
+ * the point or as the decimal mark ("1.234,50", "12,5") is refused rather than guessed.
+ */
 export function readAmount(cell: Cell | undefined): number {
   if (typeof cell === 'number') return Math.round(cell * 100);
-  const value = text(cell).replace(/[^0-9.-]/g, '');
-  return /^-?\d*\.?\d+$/.test(value) ? Math.round(Number(value) * 100) : NaN;
+  const sign = /^[−-]/;
+  let value = text(cell);
+  let negative = sign.test(value);
+  value = value.replace(sign, '').trim().replace(CURRENCY_BEFORE, '');
+  if (sign.test(value)) negative = true;
+  value = value.replace(sign, '').replace(/\/-$/, '').replace(CURRENCY_AFTER, '').trim();
+  // Groups of thousands, the last one three digits: 1,500 · 1,23,456 · 1,234,567.
+  if (!/^(\d{1,3}(,\d{2})*,\d{3}|\d{1,3}(,\d{3})+|\d+)?(\.\d+)?$/.test(value)) return NaN;
+  if (!/\d/.test(value)) return NaN;
+  const amount = Math.round(Number(value.replace(/,/g, '')) * 100);
+  return negative ? -amount : amount;
 }
 
 type Kind = Pick<SheetRow, 'kind' | 'side' | 'direction'>;

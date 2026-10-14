@@ -180,8 +180,9 @@ describe('PF', () => {
         employee: 12_000_00,
       }),
     );
-    // Σ k=1..12 of 12,000·k = 9,36,000; × 8.25 / 1200 = 6,435
-    expect(estimateInterest(monthly, 'FY 2024-25', 8.25)).toBe(6_435_00);
+    // Each month's wages earn from the next month: Σ k=0..11 of 12,000·k = 7,92,000;
+    // × 8.25 / 1200 = 5,445 (March's 12,000 earns nothing this year)
+    expect(estimateInterest(monthly, 'FY 2024-25', 8.25)).toBe(5_445_00);
     expect(estimateInterest([], 'FY 2024-25', 8.25)).toBe(0);
   });
 

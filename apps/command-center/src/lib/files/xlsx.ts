@@ -1,4 +1,4 @@
-import { FileFormatError, readZipEntries, type InflateRaw } from './zip';
+import { FileFormatError, TOO_LARGE, readZipEntries, type InflateRaw } from './zip';
 
 /**
  * The first sheet of an .xlsx file as rows of cells, enough for exported statements
@@ -10,6 +10,10 @@ export type Cell = string | number | boolean | null;
 const SHEET = 'xl/worksheets/sheet1.xml';
 const STRINGS = 'xl/sharedStrings.xml';
 const decoder = new TextDecoder();
+
+/** Larger sheets are refused: a statement never comes close, a crafted file could hang. */
+export const MAX_ROWS = 100_000;
+export const MAX_COLUMNS = 200;
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
@@ -37,17 +41,21 @@ export function columnIndex(ref: string): number {
   return index - 1;
 }
 
+const tooBig = () => new FileFormatError(TOO_LARGE);
+
 export function sheetRows(sheetXml: string, shared: string[]): Cell[][] {
   const rows: Cell[][] = [];
   const rowPattern = /<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g;
   const cellPattern = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
   for (const row of sheetXml.matchAll(rowPattern)) {
     const number = Number(attr(row[1], 'r')) || rows.length + 1;
+    if (!Number.isInteger(number) || number < 1 || number > MAX_ROWS) throw tooBig();
     const cells: Cell[] = [];
     let next = 0;
     for (const cell of (row[2] ?? '').matchAll(cellPattern)) {
       const ref = attr(cell[1], 'r');
       const column = ref ? columnIndex(ref) : next;
+      if (column < 0 || column >= MAX_COLUMNS) throw tooBig();
       next = column + 1;
       const body = cell[2] ?? '';
       const type = attr(cell[1], 't');
