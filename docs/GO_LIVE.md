@@ -103,3 +103,10 @@ confirm them on the provider's pricing page rather than relying on this file.
   and then the 6-digit code.
 - Nothing in the repository, Vercel variables or the app holds a secret key, database password
   or service-role key.
+
+## 8. Phone apps (optional)
+
+Use the web app on your phone (Add to Home Screen) until then. When you want the native app:
+create an Expo account, run `eas login` and `eas init`, set the EAS environment variables and
+add the `ledgerly://` redirect URLs in Supabase, then build. Step by step:
+[`features/MOBILE.md`](features/MOBILE.md).
