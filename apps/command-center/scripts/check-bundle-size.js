@@ -36,7 +36,9 @@ const zlib = require('zlib');
 const FIRST_LOAD_CEILING_KIB = 450;
 // 630: restore, import, PDF and sample-data code moved into chunks loaded only when used
 // (first load fell to ~439 KiB); splitting costs some compression in the total.
-const TOTAL_CEILING_KIB = 630;
+// 640: payslip import (+~18 KiB: an on-device PDF text reader, ~8 KiB, loaded only when a
+// PDF is read, and the detection and review in the Salary page's own file).
+const TOTAL_CEILING_KIB = 640;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');

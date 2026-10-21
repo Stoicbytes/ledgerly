@@ -121,9 +121,38 @@ and failure behaviour in [`../architecture/EDGE_CASES.md`](../architecture/EDGE_
   deposited, so March wages earn nothing that year) to check against the passbook, and lists
   finished years still missing it. Opening
   balances, withdrawals and months without a payslip are entered by hand. PF counts in net worth.
-- **Privacy:** no UAN, member ID, PAN or other identity number is asked for or stored.
-- **Code:** `features/salary/` (screen, sheets, `state/`), `lib/domain/salary/` (pay totals,
-  PF balance, interest estimate), `lib/data/salaryRows.ts`.
+- **Import payslips** (web; on phones the button is disabled until the next app build): choose
+  one or more files from any employer: text PDFs (Keka, greytHR, Zoho, Excel→PDF and so on),
+  CSV or Excel exports (one row per month, or a label / amount sheet). A multi-page PDF with a
+  different month on each page gives one payslip per page. Password-protected PDFs ask for the
+  password per file (or **Skip this file**); RC4, AES-128 and AES-256 are supported. Each file
+  becomes a card: month, employer (matched to an existing one ignoring case, punctuation and
+  "Pvt Ltd" / "Private Limited"; otherwise **Add employer**), gross and net, and a check that
+  the lines add up to the printed gross, total deductions and net pay (±₹1). Fields read with
+  less certainty are flagged. **Review and save** opens the usual payslip form filled in;
+  **Save all** saves the payslips with nothing to check. A payslip already added for the same
+  employer and month shows **Already added**: **Replace** edits it, **Skip** leaves it. Saving
+  goes through the normal path, so the PF contribution and the optional income entry work as
+  when typed. How it reads: labels are paired with amounts by position (two-column Earnings |
+  Deductions tables, `label: value` lists); this month's column is used where Current and YTD
+  (or Full and Actual) columns are printed; PF / EPF → employee EPF, VPF, Income tax / TDS →
+  TDS, employer PF and EPS → the employer's shares, everything else keeps its printed label.
+  Employer shares are never invented: when a payslip does not print them, **Estimate employer
+  share** (in the form) applies the statutory rule (12% of the PF wage; EPS 8.33%, at most
+  ₹1,250) and notes that it is an estimate to check in the EPFO passbook.
+- **Import limits:** scanned or photographed payslips (image-only PDFs, JPG, PNG) have no text to
+  read and are added by hand; no OCR. Files over 5 MB are refused. PDFs with uncommon
+  compression (other than Flate) or encryption (other than the standard password handler)
+  cannot be read; open them and print to a new PDF first.
+- **Privacy:** no UAN, member ID, PAN or other identity number is asked for or stored. The
+  import ignores lines labelled UAN, PAN, Aadhaar, PF or ESI number, bank account, IFSC,
+  employee ID, address or date of birth, and any label carrying a long number. Files are read
+  on the device and not kept; passwords are used once and not stored.
+- **Code:** `features/salary/` (screen, sheets, `state/`, `import/`), `lib/domain/salary/` (pay
+  totals, PF balance, interest estimate, `payslipImport/` for reading payslips),
+  `lib/files/pdfText/` (the PDF text reader), `lib/data/salaryRows.ts`. Test PDFs are made by
+  `lib/domain/salary/payslipImport/__fixtures__/make_payslips.py` (made-up companies and
+  numbers).
 - **Data:** migration 0016, through `load_ledger` / `sync_ledger`.
 
 ## Export everything

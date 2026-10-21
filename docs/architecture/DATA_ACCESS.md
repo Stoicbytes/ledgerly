@@ -86,6 +86,14 @@ the foreground on phones.
 | Q21 | `portfolio_preview(token)` | Anyone with a valid link                      | Opening a preview link                                                                            | Per preview                                                                             | Essential |
 | Q22 | `portfolio_contact(…)`     | Anyone (checks and limits in the database)    | Submitting the contact form (button disabled while sending)                                       | Per message; 3 per 10 min and 10 per day per network, 100 per day in total              | Essential |
 
+### Files read on the device (no network)
+
+Payslip import (Salary & PF → **Import payslips**), tradebook import and Restore from backup
+read the chosen files in the browser's memory. Payslip PDFs are read by the app's own reader
+(`lib/files/pdfText`, downloaded only when a PDF is read); nothing about a payslip, its file
+or its password is sent to any server or service. Only the payslips the owner saves reach the
+database, through the usual `sync_ledger` save (Q2).
+
 ### Server only (never from browsers)
 
 `market-refresh` (Edge Function, service role) calls `market_run_start`, `market_held_schemes`,

@@ -37,6 +37,13 @@ describe('SalaryScreen', () => {
     expect(after.pfEntries.some((entry) => entry.payslipId === added.id)).toBe(true);
   });
 
+  it('offers Import payslips next to Add payslip on the Payslips tab', async () => {
+    await renderWithProviders(<SalaryScreen />);
+    expect(screen.getByRole('button', { name: 'Import payslips' })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('radio', { name: 'PF / EPF' }));
+    expect(screen.queryByRole('button', { name: 'Import payslips' })).toBeNull();
+  });
+
   it('says the database needs updating when salary tables are missing', async () => {
     useSalaryStore.setState({ available: false });
     await renderWithProviders(<SalaryScreen />);

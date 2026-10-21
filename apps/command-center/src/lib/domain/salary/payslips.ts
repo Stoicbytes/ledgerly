@@ -60,6 +60,22 @@ export function contributionFromPayslip(
   };
 }
 
+/**
+ * The statutory employer share, for payslips that do not print it: the employer pays 12% of
+ * the PF wage (worked out from your EPF, which is 12% of it); the pension (EPS) part is 8.33%
+ * of the wage, at most ₹1,250 a month, and the rest goes to EPF. An estimate only: some
+ * employers pay on a capped wage, so the EPFO passbook has the real figures.
+ */
+export function estimateEmployerShare(epfEmployee: number): {
+  employerEpf: number;
+  employerEps: number;
+} {
+  if (epfEmployee <= 0) return { employerEpf: 0, employerEps: 0 };
+  const wage = Math.round((epfEmployee * 100) / 12);
+  const eps = Math.min(Math.round((wage * 833) / 10_000 / 100) * 100, 1_250_00);
+  return { employerEpf: epfEmployee - eps, employerEps: eps };
+}
+
 export type SalaryTotals = {
   months: number;
   gross: number;

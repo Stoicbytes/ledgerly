@@ -8,6 +8,7 @@ import { Button, Card, SegmentedControl } from '@/components/ui';
 import { SampleDataBadge } from '@/features/preview/SampleDataBadge';
 import { useTheme } from '@/theme';
 import { EmployersPanel } from './EmployersPanel';
+import { ImportPayslipsButton } from './import/ImportPayslipsButton';
 import { PayslipsPanel } from './PayslipsPanel';
 import { PfPanel } from './PfPanel';
 import { SalarySheets, type SalaryPanel } from './SalarySheets';
@@ -38,7 +39,10 @@ export function SalaryScreen() {
         meta={<SampleDataBadge editable />}
         actions={
           available ? (
-            <Button label={add[tab].label} icon={Plus} onPress={() => setPanel(add[tab].panel)} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space[2] }}>
+              {tab === 'payslips' ? <ImportPayslipsButton /> : null}
+              <Button label={add[tab].label} icon={Plus} onPress={() => setPanel(add[tab].panel)} />
+            </View>
           ) : null
         }
       />

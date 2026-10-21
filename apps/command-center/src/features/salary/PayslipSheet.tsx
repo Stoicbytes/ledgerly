@@ -13,6 +13,7 @@ import { lineSuggestions } from '@/lib/domain/salary';
 import { useTheme } from '@/theme';
 import { MonthField } from './components/MonthField';
 import { PayLinesEditor, type LineDraft } from './components/PayLinesEditor';
+import { EmployerEstimate } from './components/EmployerEstimate';
 import { IncomeFields, PayTotals, PfAmountFields } from './components/PayslipFields';
 import { draftFrom, readDraft, type DraftErrors, type PayslipDraft } from './payslipDraft';
 import { deletePayslip, savePayslip, type IncomeTarget } from './state/salaryActions';
@@ -21,21 +22,32 @@ import { useSalaryStore } from './state/salaryStore';
 const sumLines = (lines: LineDraft[]) =>
   lines.reduce((total, line) => total + (parseLimitedAmount(line.amount) ?? 0), 0);
 
-/** Adds or edits a payslip: lines as printed, PF and tax, and the income entry. */
+/**
+ * Adds or edits a payslip: lines as printed, PF and tax, and the income entry. An import
+ * opens it filled from a file (`initial`), with what to check (`notices`).
+ */
 export function PayslipSheet({
   payslipId,
   onClose,
+  initial,
+  notices = [],
+  onSaved,
 }: {
   payslipId: string | null;
   onClose: () => void;
+  initial?: PayslipDraft;
+  notices?: string[];
+  onSaved?: () => void;
 }) {
   const theme = useTheme();
   const toast = useToast();
   const { employers, payslips } = useSalaryStore();
   const slip = payslipId ? (payslips.find((item) => item.id === payslipId) ?? null) : null;
   const latest = [...payslips].sort((a, b) => b.month.localeCompare(a.month))[0] ?? null;
-  const [draft, setDraft] = useState<PayslipDraft>(() =>
-    draftFrom(slip, latest, employers.find((item) => !item.leftOn)?.id ?? employers[0]?.id ?? ''),
+  const [draft, setDraft] = useState<PayslipDraft>(
+    () =>
+      initial ??
+      draftFrom(slip, latest, employers.find((item) => !item.leftOn)?.id ?? employers[0]?.id ?? ''),
   );
   const linked = useExpenseStore((state) =>
     state.transactions.find((item) => item.id === slip?.transactionId),
@@ -61,6 +73,7 @@ export function PayslipSheet({
     if (result.errors) return setErrors(result.errors);
     savePayslip(result.input, payslipId, income);
     toast.show({ message: slip ? 'Payslip saved' : 'Payslip added' });
+    onSaved?.();
     onClose();
   };
   const remove = () => {
@@ -77,10 +90,16 @@ export function PayslipSheet({
       visible
       onClose={onClose}
       title={slip ? 'Edit payslip' : 'Add payslip'}
-      description="Enter the lines as your payslip prints them."
+      description={
+        initial
+          ? 'Read from your file. Check every figure against the payslip, then save.'
+          : 'Enter the lines as your payslip prints them.'
+      }
       footer={
         <>
-          {slip ? <Button label="Delete" variant="danger" size="sm" onPress={remove} /> : null}
+          {slip && !initial ? (
+            <Button label="Delete" variant="danger" size="sm" onPress={remove} />
+          ) : null}
           <View style={{ flex: 1 }} />
           <Button label="Cancel" variant="secondary" onPress={onClose} />
           <Button
@@ -92,6 +111,11 @@ export function PayslipSheet({
       }
     >
       <View style={{ gap: theme.space[4] }}>
+        {notices.map((notice) => (
+          <Text key={notice} color="warning">
+            {notice}
+          </Text>
+        ))}
         {employers.length ? (
           <ChipField
             label="Employer"
@@ -134,6 +158,7 @@ export function PayslipSheet({
           errors={errors}
           onChange={(field, value) => change({ [field]: value })}
         />
+        <EmployerEstimate draft={draft} onApply={change} />
         <PayTotals gross={gross} deductions={deductions} />
         <IncomeFields target={income} linked={Boolean(linked)} onChange={setIncome} />
         <TextField
