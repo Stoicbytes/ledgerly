@@ -17,17 +17,22 @@ import {
   type RecurringEntry,
   type Transaction,
 } from '@/lib/domain/expenses';
-import { netPay, payslipYear, type Payslip } from '@/lib/domain/salary';
+import {
+  averageSavingsRate,
+  lastSalaryInsight,
+  missingPayslipInsight,
+  monthTotals,
+  pct,
+  pfInsights,
+  salaryChangeInsight,
+  tdsInsight,
+  type Insight,
+} from '@/lib/domain/insights';
+import type { Employer, Payslip, PfEntry } from '@/lib/domain/salary';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { budgetInsight } from './budgetInsight';
 
-/** One line on the home screen: what stands out, worked out from your own entries. */
-export type Insight = {
-  id: string;
-  tone: 'warn' | 'good' | 'info';
-  title: string;
-  detail: string;
-};
+export type { Insight };
 
 export type InsightInput = {
   today: string;
@@ -37,10 +42,11 @@ export type InsightInput = {
   balances: Map<string, number>;
   rules: RecurringEntry[];
   payslips: Payslip[];
+  pfEntries?: PfEntry[];
+  employers?: Employer[];
 };
 
 const TONE_ORDER = { warn: 0, good: 1, info: 2 } as const;
-const pct = (value: number) => `${Math.round(value)}%`;
 
 /** What a credit card is owed: its balance below zero. */
 export const cardDue = (accounts: Account[], balances: Map<string, number>) =>
@@ -77,6 +83,8 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
 
   if (now.income > 0) {
     const rate = (now.net / now.income) * 100;
+    // Against the six full months before this one, income and spending together.
+    const average = averageSavingsRate(monthTotals(transactions, addMonths(month, -1), 6));
     items.push({
       id: 'savings-rate',
       tone: rate >= 20 ? 'good' : rate < 0 ? 'warn' : 'info',
@@ -84,9 +92,23 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
         rate < 0
           ? `${money(-now.net)} more spent than earned this month`
           : `You kept ${pct(rate)} of this month's income`,
-      detail: `${money(now.income)} in, ${money(now.expense)} out so far.`,
+      detail: `${money(now.income)} in, ${money(now.expense)} out so far${
+        average === null ? '' : `; ${pct(average)} on average over the last 6 months`
+      }.`,
     });
   }
+
+  // Salary and PF, after this month's money and before the general lines.
+  const { payslips, pfEntries = [], employers = [] } = input;
+  const tds = tdsInsight(payslips, today);
+  items.push(
+    ...[
+      missingPayslipInsight(payslips, employers, today),
+      salaryChangeInsight(payslips),
+      tds ?? lastSalaryInsight(payslips),
+    ].filter((item): item is Insight => item !== null),
+    ...pfInsights(pfEntries, payslips, today),
+  );
 
   if (before.expense > 0 && now.expense > 0) {
     const change = ((now.expense - before.expense) / before.expense) * 100;
@@ -162,20 +184,6 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
       tone: overdue ? 'warn' : 'info',
       title: `${upcoming.length} recurring ${upcoming.length === 1 ? 'entry' : 'entries'} due this week`,
       detail: `${money(total)} in all${overdue ? `, ${overdue} overdue` : ''}. Next: ${next.rule.note || 'entry'} on ${dayLabel(next.date, 'short')}.`,
-    });
-  }
-
-  const latest = [...input.payslips].sort((a, b) => b.month.localeCompare(a.month))[0];
-  if (latest) {
-    const fy = payslipYear(latest.month);
-    const tds = input.payslips
-      .filter((slip) => payslipYear(slip.month) === fy)
-      .reduce((sum, slip) => sum + slip.tds, 0);
-    items.push({
-      id: 'salary',
-      tone: 'info',
-      title: `Last salary ${money(netPay(latest))} for ${monthLabel(latest.month, 'short')}`,
-      detail: `Tax deducted in ${fy}: ${money(tds)}.`,
     });
   }
 

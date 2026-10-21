@@ -1,12 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { View } from 'react-native';
 import { CalendarDays } from '@/components/icons';
 import { BentoCell, BentoRow } from '@/components/layout/Bento';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Screen } from '@/components/layout/Screen';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { Text } from '@/components/ui';
+import { Card, Skeleton, Text } from '@/components/ui';
 import { useDisplayName } from '@/features/auth/useDisplayName';
 import { SampleDataBadge } from '@/features/preview/SampleDataBadge';
+import { useSalaryStore } from '@/features/salary/state/salaryStore';
 import { greeting } from '@/lib/formatting/greeting';
 import { useTheme } from '@/theme';
 import { CashflowCard } from './CashflowCard';
@@ -19,11 +21,29 @@ import { RemindersCard } from './RemindersCard';
 import { SpendingLimitCard } from './SpendingLimitCard';
 import { useOverviewData } from './useOverviewData';
 
-/** The home screen: net worth, cash flow, insights, spending and investments. */
+// Below the fold: loaded after the first paint to keep the first screen's download small.
+const SalaryPfCard = lazy(() =>
+  import('./SalaryPfCard').then((module) => ({ default: module.SalaryPfCard })),
+);
+const SpendingMixCard = lazy(() =>
+  import('./SpendingMixCard').then((module) => ({ default: module.SpendingMixCard })),
+);
+
+/** Holds the card's place while its code loads. */
+function CardPlaceholder({ height }: { height: number }) {
+  return (
+    <Card accessibilityLabel="Loading">
+      <Skeleton height={height} />
+    </Card>
+  );
+}
+
+/** The home screen: net worth, cash flow, insights, salary & PF, spending and investments. */
 export function OverviewScreen() {
   const theme = useTheme();
   const data = useOverviewData();
   const name = useDisplayName();
+  const salary = useSalaryStore((state) => state.available);
   // Phones: the header already greets; the date chip and description are dropped.
   const { isMobile } = useBreakpoint();
   const today = new Intl.DateTimeFormat('en-IN', {
@@ -72,8 +92,22 @@ export function OverviewScreen() {
       </BentoRow>
       <InsightsCard insights={data.insights} />
       <BentoRow stackBelow="desktop">
+        {salary ? (
+          <BentoCell flex={8}>
+            <Suspense fallback={<CardPlaceholder height={320} />}>
+              <SalaryPfCard />
+            </Suspense>
+          </BentoCell>
+        ) : null}
         <BentoCell flex={4}>
-          <SpendingLimitCard budget={data.budget} top={data.topCategories} />
+          <Suspense fallback={<CardPlaceholder height={320} />}>
+            <SpendingMixCard spending={data.spending} comparison={data.comparison} />
+          </Suspense>
+        </BentoCell>
+      </BentoRow>
+      <BentoRow stackBelow="desktop">
+        <BentoCell flex={4}>
+          <SpendingLimitCard budget={data.budget} />
           <InvestmentsSnapshot data={data} />
         </BentoCell>
         <BentoCell flex={8}>

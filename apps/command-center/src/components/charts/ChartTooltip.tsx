@@ -10,6 +10,8 @@ type ChartTooltipProps = { title: string; rows: TooltipRow[]; x: number; contain
 export function ChartTooltip({ title, rows, x, containerWidth }: ChartTooltipProps) {
   const theme = useTheme();
   const width = 156;
+  // Rows without a colour key keep their labels in line with the keyed ones.
+  const keyed = rows.some((row) => row.color);
   const left = Math.min(Math.max(0, x - width / 2), Math.max(0, containerWidth - width));
   return (
     <View
@@ -33,7 +35,7 @@ export function ChartTooltip({ title, rows, x, containerWidth }: ChartTooltipPro
       </Text>
       {rows.map((row) => (
         <View key={row.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {row.color ? (
+          {keyed ? (
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: row.color }} />
           ) : null}
           <Text variant="caption" color="onInverseSurface" style={{ flex: 1, opacity: 0.8 }}>

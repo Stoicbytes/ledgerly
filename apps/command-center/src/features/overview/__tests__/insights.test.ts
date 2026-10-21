@@ -4,6 +4,7 @@ import {
   type Category,
   type Transaction,
 } from '@/lib/domain/expenses';
+import { pay, pf, slip } from '@/lib/domain/insights/__fixtures__/salary';
 import { cardDue, overviewInsights, type InsightInput } from '../insights';
 
 const account = (id: string, group: Account['group'], openingBalance = 0): Account => ({
@@ -96,6 +97,51 @@ describe('overview insights', () => {
     expect(by('projection')?.title).toMatch(/On course to spend about/);
     expect(by('runway')?.title).toMatch(/Your cash covers \d+\.\d months of spending/);
     expect(by('largest')?.detail).toMatch(/Groceries and dinner/);
+  });
+
+  it('compares the savings rate with the six months before', () => {
+    const history = [
+      ...transactions,
+      tx({ kind: 'income', amount: 50_000_00, categoryId: 'pay', date: '2026-09-01' }),
+    ];
+    // Sep: 50,000 in, 8,000 out (84%); Aug and Jul have no income and do not count
+    const rate = overviewInsights(input({ transactions: history }), 10).find(
+      (item) => item.id === 'savings-rate',
+    );
+    expect(rate?.detail).toBe(
+      '₹1,00,000 in, ₹42,000 out so far; 84% on average over the last 6 months.',
+    );
+  });
+
+  it('adds salary and PF lines: a missing payslip first, then the raise, TDS and PF', () => {
+    const payslips = [
+      slip('2026-04', pay(60_000_00)),
+      slip('2026-05', { ...pay(67_200_00), employerEpf: 0, employerEps: 0 }),
+    ];
+    const pfEntries = [
+      pf('2024-04-01', { kind: 'opening', employee: 1_00_000_00 }),
+      pf('2026-05-01', { employee: 6_000_00, employer: 4_000_00 }),
+    ];
+    const list = overviewInsights(
+      input({ payslips, pfEntries, employers: [], transactions: [], balances: new Map() }),
+      10,
+    );
+    expect(list.map((item) => item.id)).toEqual([
+      'payslip-missing',
+      'salary-change',
+      'pf-growth',
+      'tds',
+      'pf-interest',
+      'pf-employer',
+    ]);
+    expect(list[0].title).toBe('No payslip for June yet');
+    expect(list[1].title).toBe('Gross pay up 12% from April');
+    expect(list.find((item) => item.id === 'pf-interest')?.title).toBe(
+      'Add PF interest for 2 years from your passbook',
+    );
+    // Six at most, warnings first
+    expect(overviewInsights(input({ payslips, pfEntries }))).toHaveLength(6);
+    expect(overviewInsights(input({ payslips, pfEntries }))[0].tone).toBe('warn');
   });
 
   it('keeps to the limit and says nothing without entries', () => {
