@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, G, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { fontFamily, useTheme } from '@/theme';
+import { ChartTooltip, type TooltipRow } from './ChartTooltip';
 import { HitColumns, PointButtons } from './HitColumns';
 import { anchorFor, trendLayout } from './trendLayout';
 import { useChartSize } from './useChartSize';
@@ -29,6 +30,8 @@ type TrendLineChartProps = {
   accessibilityLabel: string;
   /** Fixed height; omit to fill the parent (fit layouts). */
   height?: number;
+  /** A details card for the touched point (exact figures). */
+  tooltip?: (index: number) => { title: string; rows: TooltipRow[] };
 };
 
 /**
@@ -44,6 +47,7 @@ export function TrendLineChart({
   onSelect,
   accessibilityLabel,
   height,
+  tooltip,
 }: TrendLineChartProps) {
   const theme = useTheme();
   const { width, height: measured, onLayout } = useChartSize();
@@ -182,6 +186,9 @@ export function TrendLineChart({
           width={dense ? layout.step * points.length : width}
           onActive={setTouched}
         />
+      ) : null}
+      {tooltip && touched !== null && points[touched] ? (
+        <ChartTooltip x={x(touched)} containerWidth={width} {...tooltip(touched)} />
       ) : null}
     </View>
   );

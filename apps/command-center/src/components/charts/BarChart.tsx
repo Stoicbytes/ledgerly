@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Svg, { Defs, G, Line, Pattern, Rect, Text as SvgText } from 'react-native-svg';
 import { useTween } from '@/hooks/useTween';
 import { fontFamily, useTheme } from '@/theme';
-import { ChartTooltip } from './ChartTooltip';
+import { ChartTooltip, type TooltipRow } from './ChartTooltip';
 import { HitColumns } from './HitColumns';
 import { niceMax, ticks } from './scales';
 import { useChartSize } from './useChartSize';
@@ -24,6 +24,8 @@ type BarChartProps = {
   accessibilityLabel: string;
   /** Fixed height; omit to fill the parent (fit layouts). */
   height?: number;
+  /** More tooltip rows for a bar group (figures not drawn, e.g. gross pay). */
+  details?: (index: number) => TooltipRow[];
 };
 
 const AXIS = 40;
@@ -38,6 +40,7 @@ export function BarChart({
   formatAxis,
   accessibilityLabel,
   height,
+  details,
 }: BarChartProps) {
   const theme = useTheme();
   const { width, height: measured, onLayout } = useChartSize();
@@ -155,11 +158,14 @@ export function BarChart({
           x={AXIS + active * groupWidth + groupWidth / 2}
           containerWidth={width}
           title={`${data[active].label}${data[active].projected ? ' (so far)' : ''}`}
-          rows={series.map((item, index) => ({
-            label: item.name,
-            value: formatValue(data[active].values[index] ?? 0),
-            color: item.color,
-          }))}
+          rows={[
+            ...series.map((item, index) => ({
+              label: item.name,
+              value: formatValue(data[active].values[index] ?? 0),
+              color: item.color,
+            })),
+            ...(details?.(active) ?? []),
+          ]}
         />
       ) : null}
     </View>

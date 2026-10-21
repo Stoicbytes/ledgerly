@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { ArrowLeftRight, Plus } from '@/components/icons';
 import { Button, Card, CategoryIcon, Delta, Money, Text, Tile } from '@/components/ui';
+import { NetWorthTrend } from './NetWorthTrend';
 import { accountGroupIcons, accountGroupTints } from '@/features/expenses/categoryIcons';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { formatAxisMoney, formatMoneyWhole } from '@/lib/formatting/currency';
@@ -33,6 +34,7 @@ export function NetWorthCard({ data }: { data: OverviewData }) {
           ]}
         />
         <Delta value={data.savings} format="money" variant="pill" comparison="saved this month" />
+        <NetWorthTrend points={data.trend} />
         {data.pf || data.cardDue || data.leftOut.length ? (
           <Text variant="caption" color="textSecondary">
             {[

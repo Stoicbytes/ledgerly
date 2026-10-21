@@ -273,7 +273,10 @@ per user, so **Undo last import** is still offered after a reload until it is us
 ## Overview
 
 - **Purpose:** the whole picture at a glance: net worth (accounts, funds, shares, PF), insights,
-  cash flow, budget use, recent activity.
+  cash flow, salary & PF, spending by category, budget use, recent activity.
+- **Layout:** net worth, this month's figures and cash flow; insights; Salary & PF beside
+  spending by category; budget and investments beside recent activity. Phones stack them in
+  that order. The Salary & PF and spending cards load after the first paint.
 - **Net worth:** accounts (Savings & investments included: PPF, FD, RD), funds, shares and PF.
   Credit card accounts are left out; what is owed on them shows as an insight. A Savings &
   investments account whose name says it holds mutual funds (mutual fund, MF, SIP, ELSS,
@@ -283,11 +286,33 @@ per user, so **Undo last import** is still offered after a reload until it is us
   `lib/domain/expenses/netWorth.ts` (tested).
   With funds or shares, "Prices as of …" under the figure gives the older of their price dates
   (`PricesAsOf.tsx`), marked when out of date.
+  **Trend:** a sparkline of net worth at each month end over the last 12 months, counted the
+  same way: account balances from their entries, funds and shares at the last price stored for
+  each month (the investment pages' growth series), PF as entered. Account opening balances
+  have no date, so months before your first entry are left out rather than guessed
+  (`netWorthHistory`, `NetWorthTrend.tsx`).
+- **Cash flow:** income and spending for 8 months (this month hatched); the tooltip adds what
+  was saved, and a line gives last month's saving and the 6-month average.
+- **Salary & PF:** the newest net pay (month, employer), this financial year's gross, net and
+  TDS with TDS as a share of gross, the PF balance (your share incl. VPF and interest, the
+  employer's share) and the pension (EPS) apart, as on the PF page. Charts: net pay by month for
+  the last 12 months (gross and TDS in the tooltip) and the PF balance at each month end over
+  the last 24 months. Without payslips or PF entries it offers Import payslips. Code:
+  `SalaryPfCard.tsx`, `salaryOverview` in `lib/domain/insights/` (tested).
+- **Spending by category:** this month's five largest categories and Other on one scale, with
+  their share and the change against the same days of last month (`spendingMix`).
 - **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
   card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
   course (spent so far plus what the rest of a month usually costs, `projectMonthEnd`), the category that rose most, how many months your cash covers, recurring entries due
-  this week, the last salary and TDS this financial year, the largest expense. Nothing leaves
-  the device for this. Code: `features/overview/insights.ts` (tested), `InsightsCard.tsx`.
+  this week, the largest expense. The savings rate is compared with the six months before.
+  Salary and PF: a missing payslip (the newest one's month ended over 45 days ago, not after
+  leaving or a break of 6 months), a raise (gross up 5% or more on the month before or the same
+  month last year) or an unusually low month (10% or more down, naming a missing pay line), TDS
+  so far with about how much by March at the newest payslip's rate (arithmetic only, no tax
+  advice; otherwise the last salary), finished years without PF interest, the employer share
+  missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
+  device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
+  `InsightsCard.tsx`.
 - **Access:** `/dashboard`.
 - **Code:** `features/overview/` (`useOverviewData.ts` computes everything from the stores).
 - **Data:** none of its own; reads the expense, recurring, salary, portfolio and market stores.

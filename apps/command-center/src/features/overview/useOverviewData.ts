@@ -8,18 +8,17 @@ import { useSalaryStore } from '@/features/salary/state/salaryStore';
 import {
   accountBalances,
   budgetStatus,
-  categoryBreakdown,
   comparisonRange,
   inRange,
   monthBounds,
   monthLabel,
-  monthlySeries,
   monthOf,
   percentChange,
   periodTotals,
   netWorthAccounts,
   todayIso,
 } from '@/lib/domain/expenses';
+import { monthTotals, netWorthHistory, spendingMix } from '@/lib/domain/insights';
 import { pfBalance } from '@/lib/domain/salary';
 import { cardDue, overviewInsights } from './insights';
 
@@ -34,6 +33,7 @@ export function useOverviewData() {
   const stocksView = useStocksView();
   const pfEntries = useSalaryStore((state) => state.pfEntries);
   const payslips = useSalaryStore((state) => state.payslips);
+  const employers = useSalaryStore((state) => state.employers);
   const rules = useRecurringStore((state) => state.rules);
   const tracksFunds = usePortfolioStore((state) => state.funds.length > 0);
   const tracksStocks = usePortfolioStore((state) => state.stocks.length > 0);
@@ -84,17 +84,29 @@ export function useOverviewData() {
         balances,
         rules,
         payslips,
+        pfEntries,
+        employers,
       }),
       accounts: shown,
       /** Accounts whose worth is counted as fund or share value instead. */
       leftOut: leftOut.map((account) => account.name),
-      flow: monthlySeries(month, 8, transactions).map((item) => ({
+      flow: monthTotals(transactions, month, 8).map((item) => ({
         ...item,
         label: monthLabel(item.month, 'short'),
         projected: item.month === month,
       })),
       budget: { spent: budget.spentInBudgeted, total: budget.totalBudget },
-      topCategories: categoryBreakdown(transactions, categories, 'expense', range).slice(0, 3),
+      spending: spendingMix(transactions, categories, today),
+      /** Month-end net worth, counted as today (see netWorthHistory). */
+      trend: netWorthHistory({
+        accounts,
+        transactions,
+        tracking,
+        pfEntries,
+        months: fundsView.series.months,
+        funds: fundsView.series.value,
+        stocks: stocksView.series.value,
+      }),
       recent: sorted.slice(0, 6),
       funds: { ...funds, series: held(fundsView.series.value) },
       stocks: { ...stocks, series: held(stocksView.series.value) },
@@ -107,6 +119,7 @@ export function useOverviewData() {
     stocksView,
     pfEntries,
     payslips,
+    employers,
     rules,
     tracksFunds,
     tracksStocks,

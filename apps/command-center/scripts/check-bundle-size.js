@@ -38,7 +38,9 @@ const FIRST_LOAD_CEILING_KIB = 450;
 // (first load fell to ~439 KiB); splitting costs some compression in the total.
 // 640: payslip import (+~18 KiB: an on-device PDF text reader, ~8 KiB, loaded only when a
 // PDF is read, and the detection and review in the Salary page's own file).
-const TOTAL_CEILING_KIB = 640;
+// 643: home insights (+~7 KiB: salary, PF, net worth and spending calculations; the Salary &
+// PF and spending cards load after the first paint).
+const TOTAL_CEILING_KIB = 643;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');
