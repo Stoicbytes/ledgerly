@@ -28,6 +28,11 @@ Only the `main` branch and the live site are supported.
   signed-out sessions get nothing.
 - **Browser limits.** The dashboard's Content-Security-Policy allows requests only to this app's
   own Supabase project. Spreadsheet imports are capped (50 MB unpacked, 100,000 rows, 200 columns).
+- **Payslip PDFs** are read on the device by the app's own small reader (no third-party PDF
+  library, no `eval`, no worker, so the CSP stays `script-src 'self'`). Files over 5 MB are
+  refused and each stream may unpack to 20 MB at most. A PDF's password is used once to open
+  that file in memory and is never stored, logged or sent; decryption uses the browser's
+  WebCrypto (AES) and MD5/RC4 for older files.
 - **Deploys.** Edge Functions deploy only after CI passes on `main`, with a pinned CLI version.
 - **Public files.** The `portfolio-media` bucket is public: anyone with a file's address can open it,
   drafts included (addresses are random and not listed). Deleting an item does not delete its file

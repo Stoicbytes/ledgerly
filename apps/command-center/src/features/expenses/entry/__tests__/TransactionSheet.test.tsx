@@ -1,4 +1,5 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
+import { todayIso } from '@/lib/domain/expenses';
 import { renderWithProviders } from '@/test/render';
 import { useExpenseStore } from '../../state/expenseStore';
 import { useTransactionForm } from '../../state/transactionForm';
@@ -20,6 +21,23 @@ beforeEach(() => {
 
 describe('CategoryPicker', () => {
   it('puts the categories used most in the last 90 days first', async () => {
+    // Entries dated today, so the 90-day window never depends on the sample data's dates.
+    const { transactions, categories } = useExpenseStore.getState();
+    const template = transactions.find((item) => item.kind === 'expense')!;
+    const others = categories
+      .filter((category) => category.kind === 'expense' && category.id !== TEA)
+      .slice(0, 3)
+      .map((category) => category.id);
+    const used = [TEA, TEA, ...others];
+    useExpenseStore.setState({
+      transactions: used.map((categoryId, index) => ({
+        ...template,
+        id: `recent-${index}`,
+        date: todayIso(),
+        categoryId,
+        splits: [],
+      })),
+    });
     const onChoose = jest.fn();
     await renderWithProviders(
       <CategoryPicker kind="expense" selectedId={null} onChoose={onChoose} columns={3} />,
