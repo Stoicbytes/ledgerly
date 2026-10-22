@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Card, CardHeader, Money, ProgressBar, Text } from '@/components/ui';
 import { formatMoneyWhole } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
+import { homePalette } from './palette';
 
 type SpendingLimitCardProps = {
   /** Spent this month in categories that have a budget, and the sum of those budgets. */
@@ -32,7 +33,7 @@ export function SpendingLimitCard({ budget, index = 6 }: SpendingLimitCardProps)
           value={used}
           hatched
           height={14}
-          tone={used > 1 ? 'danger' : used > 0.9 ? 'warning' : 'brandFrom'}
+          color={homePalette(theme.colors)[used > 1 ? 'coral' : used > 0.9 ? 'yellow' : 'orange']}
           accessibilityLabel="Monthly budget used"
         />
         <View

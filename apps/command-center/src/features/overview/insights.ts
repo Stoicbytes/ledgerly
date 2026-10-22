@@ -3,16 +3,17 @@ import {
   budgetAlerts,
   addMonths,
   categoryBreakdown,
+  daysInMonth,
   comparisonRange,
   dayLabel,
   dueEntries,
   monthBounds,
-  monthLabel,
   monthOf,
   ownShare,
   periodTotals,
   projectMonthEnd,
   type Account,
+  type MonthProjection,
   type Category,
   type RecurringEntry,
   type Transaction,
@@ -25,8 +26,12 @@ import {
   pct,
   pfInsights,
   salaryChangeInsight,
+  savingsRates,
+  spendingPace,
   tdsInsight,
   type Insight,
+  type MonthRate,
+  type PaceDay,
 } from '@/lib/domain/insights';
 import type { Employer, Payslip, PfEntry } from '@/lib/domain/salary';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
@@ -54,15 +59,65 @@ export const cardDue = (accounts: Account[], balances: Map<string, number>) =>
     .filter((account) => account.group === 'card')
     .reduce((sum, account) => sum + Math.max(0, -(balances.get(account.id) ?? 0)), 0);
 
+export type MonthPulse = {
+  /** Share of this month's income kept so far, in percent; null without income. */
+  savingsRate: number | null;
+  /** The same over the six full months before; null without income in them. */
+  averageRate: number | null;
+  /** Spent so far plus what the rest of a month usually costs; null early in the month. */
+  projection: MonthProjection | null;
+  /** Bank, cash and wallets against the average spend of the last three full months. */
+  runway: { months: number; cash: number; monthly: number } | null;
+  daysLeft: number;
+  /** Day-by-day spending this month against last month's (pace chart). */
+  pace: PaceDay[];
+  /** Share of income kept in each of the last six months and this one. */
+  rates: MonthRate[];
+};
+
 /**
- * Rule-based insights for the home screen, most pressing first (at most `limit`). Every
- * figure comes from your own entries; nothing is predicted beyond simple arithmetic
- * (the month-end figure is spent so far plus what the rest of a month usually costs).
+ * The month's three headline numbers for the home screen: how much of the income is kept,
+ * where spending is heading and how long cash would last. Simple arithmetic on your own
+ * entries; nothing is predicted beyond "the rest of a month usually costs this much".
  */
-export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
-  const { today, transactions, categories, accounts, balances } = input;
+export function monthPulse(input: InsightInput): MonthPulse {
+  const { today, transactions, accounts, balances } = input;
   const month = monthOf(today);
   const day = Number(today.slice(8, 10));
+  const now = periodTotals(transactions, { start: monthBounds(month).start, end: today });
+  const savingsRate = now.income > 0 ? (now.net / now.income) * 100 : null;
+  const averageRate = averageSavingsRate(monthTotals(transactions, addMonths(month, -1), 6));
+  // From the 5th, so rent on the 1st is not the whole story.
+  const projection = day >= 5 && now.expense > 0 ? projectMonthEnd(transactions, today) : null;
+  const cash = accounts
+    .filter(
+      (account) =>
+        account.group === 'cash' || account.group === 'bank' || account.group === 'wallet',
+    )
+    .reduce((sum, account) => sum + Math.max(0, balances.get(account.id) ?? 0), 0);
+  const spent = [1, 2, 3].map(
+    (back) => periodTotals(transactions, monthBounds(addMonths(month, -back))).expense,
+  );
+  const monthly = Math.round(spent.reduce((sum, value) => sum + value, 0) / 3);
+  const runway = monthly > 0 && cash > 0 ? { months: cash / monthly, cash, monthly } : null;
+  return {
+    savingsRate,
+    averageRate,
+    projection,
+    runway,
+    daysLeft: daysInMonth(month) - day,
+    pace: spendingPace(transactions, today),
+    rates: savingsRates(transactions, month, 7),
+  };
+}
+
+/**
+ * Rule-based insights for the home screen, most pressing first (at most `limit`). Every
+ * figure comes from your own entries. The month's headline numbers are in monthPulse.
+ */
+export function overviewInsights(input: InsightInput, limit = 10): Insight[] {
+  const { today, transactions, categories, accounts, balances } = input;
+  const month = monthOf(today);
   const range = { start: monthBounds(month).start, end: today };
   const base = comparisonRange(month, today);
   const now = periodTotals(transactions, range);
@@ -78,23 +133,6 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
       tone: 'warn',
       title: `${money(due)} due on credit cards`,
       detail: 'Left out of net worth. Paying a card from a bank account clears it.',
-    });
-  }
-
-  if (now.income > 0) {
-    const rate = (now.net / now.income) * 100;
-    // Against the six full months before this one, income and spending together.
-    const average = averageSavingsRate(monthTotals(transactions, addMonths(month, -1), 6));
-    items.push({
-      id: 'savings-rate',
-      tone: rate >= 20 ? 'good' : rate < 0 ? 'warn' : 'info',
-      title:
-        rate < 0
-          ? `${money(-now.net)} more spent than earned this month`
-          : `You kept ${pct(rate)} of this month's income`,
-      detail: `${money(now.income)} in, ${money(now.expense)} out so far${
-        average === null ? '' : `; ${pct(average)} on average over the last 6 months`
-      }.`,
     });
   }
 
@@ -122,18 +160,6 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
     }
   }
 
-  // Spent so far plus what the rest of a month usually costs, so rent on the 1st is not
-  // multiplied over the month.
-  const course = day >= 5 && now.expense > 0 ? projectMonthEnd(transactions, today) : null;
-  if (course) {
-    items.push({
-      id: 'projection',
-      tone: 'info',
-      title: `On course to spend about ${money(course.projected)} in ${monthLabel(month, 'short')}`,
-      detail: `${money(course.spent)} so far; the rest of a month usually costs about ${money(course.rest)}.`,
-    });
-  }
-
   const earlier = new Map(
     categoryBreakdown(transactions, categories, 'expense', base).map((slice) => [
       slice.id,
@@ -150,27 +176,6 @@ export function overviewInsights(input: InsightInput, limit = 6): Insight[] {
       tone: 'warn',
       title: `${rise.slice.name} is up ${money(rise.delta)} on last month`,
       detail: `${money(rise.slice.amount)} so far, against ${money(earlier.get(rise.slice.id) ?? 0)} at this point last month.`,
-    });
-  }
-
-  // Cash on hand against the average spend of the last three full months.
-  const cash = accounts
-    .filter(
-      (account) =>
-        account.group === 'cash' || account.group === 'bank' || account.group === 'wallet',
-    )
-    .reduce((sum, account) => sum + Math.max(0, balances.get(account.id) ?? 0), 0);
-  const spent = [1, 2, 3].map(
-    (back) => periodTotals(transactions, monthBounds(addMonths(month, -back))).expense,
-  );
-  const average = spent.reduce((sum, value) => sum + value, 0) / 3;
-  if (average > 0 && cash > 0) {
-    const months = cash / average;
-    items.push({
-      id: 'runway',
-      tone: months >= 6 ? 'good' : months < 3 ? 'warn' : 'info',
-      title: `Your cash covers ${months.toFixed(1)} months of spending`,
-      detail: `${money(cash)} in bank, cash and wallets; about ${money(Math.round(average))} spent a month lately.`,
     });
   }
 

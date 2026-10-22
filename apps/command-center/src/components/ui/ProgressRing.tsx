@@ -15,6 +15,10 @@ type ProgressRingProps = {
   size?: number;
   strokeWidth?: number;
   tone?: RingTone;
+  /** A colour outside the tones (e.g. a pie colour); wins over `tone`. */
+  color?: string;
+  /** The unfilled part; set it when the background is already surfaceMuted. */
+  track?: string;
   /** Centre content, e.g. the percentage. */
   children?: ReactNode;
 };
@@ -25,6 +29,8 @@ export function ProgressRing({
   size = 88,
   strokeWidth = 8,
   tone = 'brandFrom',
+  color,
+  track,
   children,
 }: ProgressRingProps) {
   const theme = useTheme();
@@ -45,7 +51,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme.colors.surfaceMuted}
+          stroke={track ?? theme.colors.surfaceMuted}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -53,7 +59,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme.colors[tone]}
+          stroke={color ?? theme.colors[tone]}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           fill="none"

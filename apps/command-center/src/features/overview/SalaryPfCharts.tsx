@@ -6,6 +6,7 @@ import { monthLabel } from '@/lib/domain/expenses';
 import type { PayMonth } from '@/lib/domain/insights';
 import { formatAxisMoney, formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
+import { homePalette } from './palette';
 
 type SalaryPfChartsProps = { pay: PayMonth[]; pfHistory: { month: string; balance: number }[] };
 
@@ -27,7 +28,7 @@ export function SalaryPfCharts({ pay, pfHistory }: SalaryPfChartsProps) {
               label: monthLabel(item.month, 'short'),
               values: [item.net],
             }))}
-            series={[{ name: 'Net pay', color: theme.colors.chartPositive }]}
+            series={[{ name: 'Net pay', color: homePalette(theme.colors).blue }]}
             formatValue={(value) => money(value)}
             formatAxis={formatAxisMoney}
             details={(index) => [
@@ -45,7 +46,7 @@ export function SalaryPfCharts({ pay, pfHistory }: SalaryPfChartsProps) {
         >
           <TrendLineChart
             height={170}
-            color={theme.colors.chart[0]}
+            color={homePalette(theme.colors).violet}
             points={pfHistory.map((item) => ({
               label: monthLabel(item.month, 'short'),
               sublabel: item.month.slice(0, 4),

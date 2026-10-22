@@ -3,6 +3,7 @@ import { BarChart } from '@/components/charts';
 import { Card, CardHeader, Text } from '@/components/ui';
 import { formatAxisMoney, formatMoneyWhole } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
+import { homePalette } from './palette';
 
 type FlowMonth = {
   label: string;
@@ -22,9 +23,10 @@ export function CashflowCard({
   height?: number;
 }) {
   const theme = useTheme();
+  const palette = homePalette(theme.colors);
   const series = [
-    { name: 'Income', color: theme.colors.chartPositive },
-    { name: 'Expenses', color: theme.colors.chartNegative },
+    { name: 'Income', color: palette.green },
+    { name: 'Expenses', color: palette.coral },
   ];
   const latest = flow[flow.length - 2];
   // The six full months before this one.

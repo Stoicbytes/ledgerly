@@ -25,7 +25,7 @@ export function budgetInsight(alerts: BudgetAlert[]): Insight | null {
       id: 'budget',
       tone: 'warn',
       title: alertText(alerts[0]),
-      detail: 'See Expenses → Budget.',
+      detail: `${money(alerts[0].spent)} spent of ${money(alerts[0].budget)}.`,
     };
   }
   const over = alerts.filter((alert) => alert.level === 'over').length;
@@ -37,6 +37,6 @@ export function budgetInsight(alerts: BudgetAlert[]): Insight | null {
     id: 'budget',
     tone: 'warn',
     title: `${alerts.length} budgets need a look: ${parts.join(', ')}`,
-    detail: `${alerts.map((alert) => alert.category.name).join(', ')}. See Expenses → Budget.`,
+    detail: `${alerts.map((alert) => alert.category.name).join(', ')}.`,
   };
 }

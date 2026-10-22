@@ -76,7 +76,7 @@ describe('budget alerts', () => {
       id: 'budget',
       tone: 'warn',
       title: '3 budgets need a look: 1 over, 2 close to the limit',
-      detail: 'Food, Fuel, Fun. See Expenses → Budget.',
+      detail: 'Food, Fuel, Fun.',
     });
     expect(budgetInsight([alerts[0]])?.title).toBe('Food is ₹1,200 over its ₹6,000 budget');
     expect(budgetInsight([])).toBeNull();

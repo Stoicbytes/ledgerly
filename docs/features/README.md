@@ -299,20 +299,31 @@ per user, so **Undo last import** is still offered after a reload until it is us
   the last 12 months (gross and TDS in the tooltip) and the PF balance at each month end over
   the last 24 months. Without payslips or PF entries it offers Import payslips. Code:
   `SalaryPfCard.tsx`, `salaryOverview` in `lib/domain/insights/` (tested).
-- **Spending by category:** this month's five largest categories and Other on one scale, with
-  their share and the change against the same days of last month (`spendingMix`).
-- **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
-  card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
-  course (spent so far plus what the rest of a month usually costs, `projectMonthEnd`), the category that rose most, how many months your cash covers, recurring entries due
-  this week, the largest expense. The savings rate is compared with the six months before.
-  Salary and PF: a missing payslip (the newest one's month ended over 45 days ago, not after
-  leaving or a break of 6 months), a raise (gross up 5% or more on the month before or the same
-  month last year) or an unusually low month (10% or more down, naming a missing pay line), TDS
-  so far with about how much by March at the newest payslip's rate (arithmetic only, no tax
-  advice; otherwise the last salary), finished years without PF interest, the employer share
-  missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
-  device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
-  `InsightsCard.tsx`.
+- **Spending by category:** drawn like Expenses → Stats: a pie in rank colours and the ranking
+  with share badges for this month's five largest categories and Other, each with the change
+  against the same days of last month (`spendingMix`). Pressing a category opens it in Stats.
+- **This month:** three charted panels, then the insights in two groups.
+  - **Income kept** (`monthPulse`, `savingsRates`): this month's share as a ring, against the
+    six months before, and each of the last seven months as a bar (touch one for income and
+    the amount kept).
+  - **Spending pace** (`spendingPace`): spending added up day by day this month, against last
+    month's at the same day (dashed), with where it is heading (spent so far plus what the rest
+    of a month usually costs, `projectMonthEnd`, from the 5th).
+  - **Cash would last:** months that bank, cash and wallets cover at the last three months'
+    average spend, on a 0–12 month gauge.
+  - **Needs a look** (warnings) and **Good to know** (the rest; three shown, "Show more" for
+    the others). Each line opens the page where it is acted on (Budget, Accounts, Stats,
+    Expenses or Salary & PF). Rules: card dues, budget alerts, spending pace against the same
+    days last month, the category that rose most, recurring entries due this week, the largest
+    expense.
+    Salary and PF: a missing payslip (the newest one's month ended over 45 days ago, not after
+    leaving or a break of 6 months), a raise (gross up 5% or more on the month before or the same
+    month last year) or an unusually low month (10% or more down, naming a missing pay line), TDS
+    so far with about how much by March at the newest payslip's rate (arithmetic only, no tax
+    advice; otherwise the last salary), finished years without PF interest, the employer share
+    missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
+    device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
+    `InsightsCard.tsx`, `PulsePanel.tsx`, `PacePanel.tsx`.
 - **Access:** `/dashboard`.
 - **Code:** `features/overview/` (`useOverviewData.ts` computes everything from the stores).
 - **Data:** none of its own; reads the expense, recurring, salary, portfolio and market stores.
