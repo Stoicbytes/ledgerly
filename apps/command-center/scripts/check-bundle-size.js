@@ -42,7 +42,9 @@ const FIRST_LOAD_CEILING_KIB = 450;
 // PF and spending cards load after the first paint).
 // 645: the home screen's "This month" card (income kept by month, spending pace against last
 // month, cash cover gauge).
-const TOTAL_CEILING_KIB = 645;
+// 646: the home charts in the Stats pie palette (a shared palette helper, colour options on
+// ProgressBar and ProgressRing).
+const TOTAL_CEILING_KIB = 646;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');

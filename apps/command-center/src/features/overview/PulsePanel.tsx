@@ -7,6 +7,7 @@ import { pct } from '@/lib/domain/insights';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
 import type { MonthPulse } from './insights';
+import { homePalette, statusColor } from './palette';
 
 /** A grey panel inside the "This month" card. */
 export function Panel({ basis, children }: { basis: number; children: ReactNode }) {
@@ -33,13 +34,17 @@ export function Panel({ basis, children }: { basis: number; children: ReactNode 
 export function KeptPanel({ pulse }: { pulse: MonthPulse }) {
   const theme = useTheme();
   const rate = pulse.savingsRate;
-  const tone = rate === null ? 'accent' : rate < 0 ? 'danger' : rate < 20 ? 'warning' : 'success';
+  const ring = statusColor(
+    theme.colors,
+    rate === null || rate < 0 ? 'bad' : rate < 20 ? 'watch' : 'good',
+  );
   return (
     <Panel basis={260}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space[3] }}>
         <ProgressRing
           value={rate === null ? 0 : rate / 100}
-          tone={tone}
+          color={rate === null ? theme.colors.border : ring}
+          track={theme.colors.border}
           size={68}
           accessibilityLabel="Share of this month's income kept"
         >
@@ -66,7 +71,7 @@ export function KeptPanel({ pulse }: { pulse: MonthPulse }) {
           label: monthLabel(item.month, 'short'),
           values: [Math.max(0, item.rate ?? 0)],
         }))}
-        series={[{ name: 'Kept', color: theme.colors.success }]}
+        series={[{ name: 'Kept', color: homePalette(theme.colors).green }]}
         formatValue={(value) => pct(value)}
         formatAxis={(value) => `${Math.round(value)}%`}
         details={(index) => {
@@ -87,7 +92,7 @@ export function CashPanel({ pulse }: { pulse: MonthPulse }) {
   const theme = useTheme();
   const runway = pulse.runway;
   const months = runway?.months ?? 0;
-  const tone = months >= 6 ? 'success' : months >= 3 ? 'warning' : 'danger';
+  const gauge = statusColor(theme.colors, months >= 6 ? 'good' : months >= 3 ? 'watch' : 'bad');
   return (
     <Panel basis={220}>
       <Text variant="caption" color="textSecondary">
@@ -100,7 +105,8 @@ export function CashPanel({ pulse }: { pulse: MonthPulse }) {
         <View style={{ gap: theme.space[1] }}>
           <ProgressBar
             value={months / 12}
-            tone={tone}
+            color={gauge}
+            track={theme.colors.border}
             accessibilityLabel={`Cash covers ${months.toFixed(1)} of 12 months`}
           />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

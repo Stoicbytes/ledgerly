@@ -5,6 +5,7 @@ import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
 import type { MonthPulse } from './insights';
 import { Panel } from './PulsePanel';
+import { homePalette } from './palette';
 
 /** Spending added up day by day this month, against last month's (dashed). */
 export function PacePanel({ pulse, month }: { pulse: MonthPulse; month: string }) {
@@ -42,7 +43,7 @@ export function PacePanel({ pulse, month }: { pulse: MonthPulse; month: string }
         </Text>
       </View>
       <View style={{ flexDirection: 'row', gap: theme.space[4] }}>
-        {legend(theme.colors.pie[1], month)}
+        {legend(homePalette(theme.colors).orange, month)}
         {legend(theme.colors.textSecondary, 'Last month', true)}
       </View>
       {pace.length > 1 ? (
@@ -58,7 +59,11 @@ export function PacePanel({ pulse, month }: { pulse: MonthPulse; month: string }
           tooltip={(index) => ({
             title: `Day ${pace[index].day}`,
             rows: [
-              { label: month, value: money(pace[index].spent), color: theme.colors.pie[1] },
+              {
+                label: month,
+                value: money(pace[index].spent),
+                color: homePalette(theme.colors).orange,
+              },
               { label: 'Last month', value: money(pace[index].last) },
             ],
           })}

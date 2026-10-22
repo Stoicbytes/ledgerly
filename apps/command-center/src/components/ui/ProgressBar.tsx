@@ -18,6 +18,10 @@ type ProgressBarProps = {
   height?: number;
   /** Draw the remaining part with diagonal hatching (reference style). */
   hatched?: boolean;
+  /** A colour outside the tones (e.g. a pie colour); wins over `tone`. */
+  color?: string;
+  /** The unfilled part; set it when the background is already surfaceMuted. */
+  track?: string;
 };
 
 export function ProgressBar({
@@ -26,6 +30,8 @@ export function ProgressBar({
   tone = 'brandFrom',
   height = 10,
   hatched = false,
+  color,
+  track,
 }: ProgressBarProps) {
   const theme = useTheme();
   const clamped = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
@@ -40,7 +46,7 @@ export function ProgressBar({
       style={{
         height,
         borderRadius: height / 2,
-        backgroundColor: hatched ? 'transparent' : theme.colors.surfaceMuted,
+        backgroundColor: hatched ? 'transparent' : (track ?? theme.colors.surfaceMuted),
         overflow: 'hidden',
         flexDirection: 'row',
       }}
@@ -71,7 +77,7 @@ export function ProgressBar({
           width: `${percent * progress}%`,
           height: '100%',
           borderRadius: height / 2,
-          backgroundColor: theme.colors[tone],
+          backgroundColor: color ?? theme.colors[tone],
         }}
       />
     </View>
