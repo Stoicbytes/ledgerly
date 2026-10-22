@@ -5,7 +5,7 @@ import {
   type Transaction,
 } from '@/lib/domain/expenses';
 import { pay, pf, slip } from '@/lib/domain/insights/__fixtures__/salary';
-import { cardDue, overviewInsights, type InsightInput } from '../insights';
+import { cardDue, monthPulse, overviewInsights, type InsightInput } from '../insights';
 
 const account = (id: string, group: Account['group'], openingBalance = 0): Account => ({
   id,
@@ -86,33 +86,13 @@ describe('overview insights', () => {
     expect(list.find((item) => item.id === 'category')?.title).toMatch(/^Food is up/);
   });
 
-  it('reports the savings rate, the month-end course, cash cover and the largest expense', () => {
+  it('names the largest expense', () => {
     const list = overviewInsights(input(), 10);
-    const by = (id: string) => list.find((item) => item.id === id);
-    // 1,00,000 in, 42,000 out: 58 % kept
-    expect(by('savings-rate')).toMatchObject({
-      tone: 'good',
-      title: "You kept 58% of this month's income",
-    });
-    expect(by('projection')?.title).toMatch(/On course to spend about/);
-    expect(by('runway')?.title).toMatch(/Your cash covers \d+\.\d months of spending/);
-    expect(by('largest')?.detail).toMatch(/Groceries and dinner/);
+    expect(list.find((item) => item.id === 'largest')?.detail).toMatch(/Groceries and dinner/);
+    // The month's headline numbers moved to monthPulse
+    const ids = list.map((item) => item.id);
+    for (const id of ['savings-rate', 'projection', 'runway']) expect(ids).not.toContain(id);
   });
-
-  it('compares the savings rate with the six months before', () => {
-    const history = [
-      ...transactions,
-      tx({ kind: 'income', amount: 50_000_00, categoryId: 'pay', date: '2026-09-01' }),
-    ];
-    // Sep: 50,000 in, 8,000 out (84%); Aug and Jul have no income and do not count
-    const rate = overviewInsights(input({ transactions: history }), 10).find(
-      (item) => item.id === 'savings-rate',
-    );
-    expect(rate?.detail).toBe(
-      '₹1,00,000 in, ₹42,000 out so far; 84% on average over the last 6 months.',
-    );
-  });
-
   it('adds salary and PF lines: a missing payslip first, then the raise, TDS and PF', () => {
     const payslips = [
       slip('2026-04', pay(60_000_00)),
@@ -140,8 +120,37 @@ describe('overview insights', () => {
       'Add PF interest for 2 years from your passbook',
     );
     // Six at most, warnings first
-    expect(overviewInsights(input({ payslips, pfEntries }))).toHaveLength(6);
+    expect(overviewInsights(input({ payslips, pfEntries }), 6)).toHaveLength(6);
     expect(overviewInsights(input({ payslips, pfEntries }))[0].tone).toBe('warn');
+  });
+
+  it('sums up the month: income kept, where spending is heading and cash cover', () => {
+    const pulse = monthPulse(input());
+    // 1,00,000 in, 42,000 out: 58 % kept; no earlier income to average
+    expect(Math.round(pulse.savingsRate ?? 0)).toBe(58);
+    expect(pulse.averageRate).toBeNull();
+    expect(pulse.projection?.spent).toBe(42_000_00);
+    expect(pulse.projection!.projected).toBeGreaterThanOrEqual(42_000_00);
+    // bank 2,00,000 + 1,00,000 − 60,000 spent from it; Jul–Sep spent 30,000: 10,000 a month
+    expect(pulse.runway).toEqual({ months: 24, cash: 2_40_000_00, monthly: 10_000_00 });
+    expect(pulse.daysLeft).toBe(16);
+  });
+
+  it('compares the savings rate with the six months before', () => {
+    const history = [
+      ...transactions,
+      tx({ kind: 'income', amount: 50_000_00, categoryId: 'pay', date: '2026-09-01' }),
+    ];
+    // Sep: 50,000 in, 8,000 out (84%); Aug and Jul have no income and do not count
+    expect(Math.round(monthPulse(input({ transactions: history })).averageRate ?? 0)).toBe(84);
+  });
+
+  it('leaves the month figures empty without entries', () => {
+    expect(monthPulse(input({ transactions: [], balances: new Map() }))).toMatchObject({
+      savingsRate: null,
+      projection: null,
+      runway: null,
+    });
   });
 
   it('keeps to the limit and says nothing without entries', () => {

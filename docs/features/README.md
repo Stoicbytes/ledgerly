@@ -301,18 +301,24 @@ per user, so **Undo last import** is still offered after a reload until it is us
   `SalaryPfCard.tsx`, `salaryOverview` in `lib/domain/insights/` (tested).
 - **Spending by category:** this month's five largest categories and Other on one scale, with
   their share and the change against the same days of last month (`spendingMix`).
-- **Insights:** up to six, warnings first, worked out by simple rules from your own entries:
-  card dues, budget alerts, savings rate, spending pace against the same days last month, the month-end
-  course (spent so far plus what the rest of a month usually costs, `projectMonthEnd`), the category that rose most, how many months your cash covers, recurring entries due
-  this week, the largest expense. The savings rate is compared with the six months before.
-  Salary and PF: a missing payslip (the newest one's month ended over 45 days ago, not after
-  leaving or a break of 6 months), a raise (gross up 5% or more on the month before or the same
-  month last year) or an unusually low month (10% or more down, naming a missing pay line), TDS
-  so far with about how much by March at the newest payslip's rate (arithmetic only, no tax
-  advice; otherwise the last salary), finished years without PF interest, the employer share
-  missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
-  device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
-  `InsightsCard.tsx`.
+- **This month:** three headline numbers, then the insights in two groups.
+  - Numbers (`monthPulse`): the share of this month's income kept, as a ring, against the
+    six months before; where spending is heading (spent so far plus what the rest of a month
+    usually costs, `projectMonthEnd`, from the 5th); how many months bank, cash and wallets
+    would last at the last three months' average spend.
+  - **Needs a look** (warnings) and **Good to know** (the rest; three shown, "Show more" for
+    the others). Each line opens the page where it is acted on (Budget, Accounts, Stats,
+    Expenses or Salary & PF). Rules: card dues, budget alerts, spending pace against the same
+    days last month, the category that rose most, recurring entries due this week, the largest
+    expense.
+    Salary and PF: a missing payslip (the newest one's month ended over 45 days ago, not after
+    leaving or a break of 6 months), a raise (gross up 5% or more on the month before or the same
+    month last year) or an unusually low month (10% or more down, naming a missing pay line), TDS
+    so far with about how much by March at the newest payslip's rate (arithmetic only, no tax
+    advice; otherwise the last salary), finished years without PF interest, the employer share
+    missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
+    device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
+    `InsightsCard.tsx`, `PulsePanel.tsx`.
 - **Access:** `/dashboard`.
 - **Code:** `features/overview/` (`useOverviewData.ts` computes everything from the stores).
 - **Data:** none of its own; reads the expense, recurring, salary, portfolio and market stores.

@@ -16,7 +16,8 @@ describe('OverviewScreen', () => {
   it('shows the sample net worth trend, insights, Salary & PF and spending by category', async () => {
     await renderWithProviders(<OverviewScreen />);
     expect(screen.getByLabelText(/^Net worth, last \d+ months: /)).toBeTruthy();
-    expect(screen.getByText('Insights')).toBeTruthy();
+    expect(screen.getByText('This month')).toBeTruthy();
+    expect(screen.getByText('NEEDS A LOOK')).toBeTruthy();
     expect(await screen.findByText('Latest net pay')).toBeTruthy();
     expect(await screen.findByText('Spending by category')).toBeTruthy();
   });

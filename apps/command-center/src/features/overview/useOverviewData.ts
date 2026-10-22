@@ -20,7 +20,7 @@ import {
 } from '@/lib/domain/expenses';
 import { monthTotals, netWorthHistory, spendingMix } from '@/lib/domain/insights';
 import { pfBalance } from '@/lib/domain/salary';
-import { cardDue, overviewInsights } from './insights';
+import { cardDue, monthPulse, overviewInsights } from './insights';
 
 /**
  * Overview figures. Cash flow, spending and accounts come from the expense ledger,
@@ -58,6 +58,17 @@ export function useOverviewData() {
     // Credited PF only (your share and the employer's); the pension share is not a balance.
     const pf = pfBalance(pfEntries).total;
     const budget = budgetStatus(categories, transactions, month);
+    const insightInput = {
+      today,
+      transactions,
+      categories,
+      accounts,
+      balances,
+      rules,
+      payslips,
+      pfEntries,
+      employers,
+    };
     const sorted = [...transactions].sort(
       (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
     );
@@ -76,17 +87,8 @@ export function useOverviewData() {
       netWorth: cash + funds.value + stocks.value + pf,
       pf,
       cardDue: cardDue(accounts, balances),
-      insights: overviewInsights({
-        today,
-        transactions,
-        categories,
-        accounts,
-        balances,
-        rules,
-        payslips,
-        pfEntries,
-        employers,
-      }),
+      insights: overviewInsights(insightInput),
+      pulse: monthPulse(insightInput),
       accounts: shown,
       /** Accounts whose worth is counted as fund or share value instead. */
       leftOut: leftOut.map((account) => account.name),

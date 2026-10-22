@@ -90,7 +90,7 @@ export function OverviewScreen() {
           <CashflowCard flow={data.flow} height={isMobile ? 180 : 250} />
         </BentoCell>
       </BentoRow>
-      <InsightsCard insights={data.insights} />
+      <InsightsCard insights={data.insights} pulse={data.pulse} />
       <BentoRow stackBelow="desktop">
         {salary ? (
           <BentoCell flex={8}>
