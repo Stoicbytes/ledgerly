@@ -301,11 +301,15 @@ per user, so **Undo last import** is still offered after a reload until it is us
   `SalaryPfCard.tsx`, `salaryOverview` in `lib/domain/insights/` (tested).
 - **Spending by category:** this month's five largest categories and Other on one scale, with
   their share and the change against the same days of last month (`spendingMix`).
-- **This month:** three headline numbers, then the insights in two groups.
-  - Numbers (`monthPulse`): the share of this month's income kept, as a ring, against the
-    six months before; where spending is heading (spent so far plus what the rest of a month
-    usually costs, `projectMonthEnd`, from the 5th); how many months bank, cash and wallets
-    would last at the last three months' average spend.
+- **This month:** three charted panels, then the insights in two groups.
+  - **Income kept** (`monthPulse`, `savingsRates`): this month's share as a ring, against the
+    six months before, and each of the last seven months as a bar (touch one for income and
+    the amount kept).
+  - **Spending pace** (`spendingPace`): spending added up day by day this month, against last
+    month's at the same day (dashed), with where it is heading (spent so far plus what the rest
+    of a month usually costs, `projectMonthEnd`, from the 5th).
+  - **Cash would last:** months that bank, cash and wallets cover at the last three months'
+    average spend, on a 0–12 month gauge.
   - **Needs a look** (warnings) and **Good to know** (the rest; three shown, "Show more" for
     the others). Each line opens the page where it is acted on (Budget, Accounts, Stats,
     Expenses or Salary & PF). Rules: card dues, budget alerts, spending pace against the same
@@ -318,7 +322,7 @@ per user, so **Undo last import** is still offered after a reload until it is us
     advice; otherwise the last salary), finished years without PF interest, the employer share
     missing on recent payslips, and how much PF grew this financial year. Nothing leaves the
     device for this. Code: `features/overview/insights.ts`, `lib/domain/insights/` (tested),
-    `InsightsCard.tsx`, `PulsePanel.tsx`.
+    `InsightsCard.tsx`, `PulsePanel.tsx`, `PacePanel.tsx`.
 - **Access:** `/dashboard`.
 - **Code:** `features/overview/` (`useOverviewData.ts` computes everything from the stores).
 - **Data:** none of its own; reads the expense, recurring, salary, portfolio and market stores.

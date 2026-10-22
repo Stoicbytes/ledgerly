@@ -7,7 +7,8 @@ import { monthOf, todayIso } from '@/lib/domain/expenses';
 import { monthName } from '@/lib/domain/insights';
 import { useTheme } from '@/theme';
 import type { Insight, MonthPulse } from './insights';
-import { PulsePanel } from './PulsePanel';
+import { PacePanel } from './PacePanel';
+import { CashPanel, KeptPanel } from './PulsePanel';
 
 const EXPENSES = '/dashboard/expenses';
 const STATS = '/dashboard/expenses/stats';
@@ -34,9 +35,9 @@ const LINKS: Record<string, { href: string; label: string }> = {
 const FOLDED = 3;
 
 /**
- * "This month" on the home screen: three headline numbers (income kept, where spending is
- * heading, how long cash lasts), then what needs a look and what is good to know. Each line
- * opens the page where it is acted on. Hidden when there is nothing to show.
+ * "This month" on the home screen: three charted panels (income kept by month, spending pace
+ * against last month, cash cover on a gauge), then what needs a look and what is good to know.
+ * Each line opens the page where it is acted on. Hidden when there is nothing to show.
  */
 export function InsightsCard({ insights, pulse }: { insights: Insight[]; pulse: MonthPulse }) {
   const theme = useTheme();
@@ -54,43 +55,49 @@ export function InsightsCard({ insights, pulse }: { insights: Insight[]; pulse: 
         title="This month"
         subtitle={`${pulse.daysLeft} ${pulse.daysLeft === 1 ? 'day' : 'days'} left in ${month} · from your own entries`}
       />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space[3] }}>
+        <KeptPanel pulse={pulse} />
+        <PacePanel pulse={pulse} month={month} />
+        <CashPanel pulse={pulse} />
+      </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.space[4] }}>
-        <PulsePanel pulse={pulse} />
-        <View style={{ flexBasis: 340, flexGrow: 2, gap: theme.space[4] }}>
-          <View style={{ gap: theme.space[2] }}>
-            <Text variant="eyebrow" color="textSecondary">
-              NEEDS A LOOK
-            </Text>
-            {attention.length ? (
-              attention.map((item) => <InsightRow key={item.id} item={item} />)
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}>
-                <CircleCheck size={16} color={theme.colors.success} />
-                <Text color="textSecondary">Nothing needs a look right now.</Text>
-              </View>
-            )}
-          </View>
-          {notes.length ? (
-            <View style={{ gap: theme.space[2] }}>
-              <Text variant="eyebrow" color="textSecondary">
-                GOOD TO KNOW
-              </Text>
-              {shown.map((item) => (
-                <InsightRow key={item.id} item={item} />
-              ))}
-              {notes.length > FOLDED ? (
-                <View style={{ flexDirection: 'row' }}>
-                  <Button
-                    label={open ? 'Show less' : `Show ${notes.length - FOLDED} more`}
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => setOpen(!open)}
-                  />
-                </View>
-              ) : null}
+        <View
+          style={{ flexBasis: 340, flexGrow: 1, flexShrink: 1, minWidth: 0, gap: theme.space[2] }}
+        >
+          <Text variant="eyebrow" color="textSecondary">
+            NEEDS A LOOK
+          </Text>
+          {attention.length ? (
+            attention.map((item) => <InsightRow key={item.id} item={item} />)
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}>
+              <CircleCheck size={16} color={theme.colors.success} />
+              <Text color="textSecondary">Nothing needs a look right now.</Text>
             </View>
-          ) : null}
+          )}
         </View>
+        {notes.length ? (
+          <View
+            style={{ flexBasis: 340, flexGrow: 1, flexShrink: 1, minWidth: 0, gap: theme.space[2] }}
+          >
+            <Text variant="eyebrow" color="textSecondary">
+              GOOD TO KNOW
+            </Text>
+            {shown.map((item) => (
+              <InsightRow key={item.id} item={item} />
+            ))}
+            {notes.length > FOLDED ? (
+              <View style={{ flexDirection: 'row' }}>
+                <Button
+                  label={open ? 'Show less' : `Show ${notes.length - FOLDED} more`}
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => setOpen(!open)}
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </Card>
   );

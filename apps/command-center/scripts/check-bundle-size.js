@@ -40,8 +40,9 @@ const FIRST_LOAD_CEILING_KIB = 450;
 // PDF is read, and the detection and review in the Salary page's own file).
 // 643: home insights (+~7 KiB: salary, PF, net worth and spending calculations; the Salary &
 // PF and spending cards load after the first paint).
-// 644: the home screen's "This month" card (income-kept ring, spending heading, cash cover).
-const TOTAL_CEILING_KIB = 644;
+// 645: the home screen's "This month" card (income kept by month, spending pace against last
+// month, cash cover gauge).
+const TOTAL_CEILING_KIB = 645;
 const TARGET_KIB = 350;
 // npm scripts run from the package root.
 const dir = path.join(process.cwd(), 'dist', '_expo', 'static', 'js', 'web');

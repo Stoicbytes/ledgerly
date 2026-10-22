@@ -26,8 +26,12 @@ import {
   pct,
   pfInsights,
   salaryChangeInsight,
+  savingsRates,
+  spendingPace,
   tdsInsight,
   type Insight,
+  type MonthRate,
+  type PaceDay,
 } from '@/lib/domain/insights';
 import type { Employer, Payslip, PfEntry } from '@/lib/domain/salary';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
@@ -65,6 +69,10 @@ export type MonthPulse = {
   /** Bank, cash and wallets against the average spend of the last three full months. */
   runway: { months: number; cash: number; monthly: number } | null;
   daysLeft: number;
+  /** Day-by-day spending this month against last month's (pace chart). */
+  pace: PaceDay[];
+  /** Share of income kept in each of the last six months and this one. */
+  rates: MonthRate[];
 };
 
 /**
@@ -92,7 +100,15 @@ export function monthPulse(input: InsightInput): MonthPulse {
   );
   const monthly = Math.round(spent.reduce((sum, value) => sum + value, 0) / 3);
   const runway = monthly > 0 && cash > 0 ? { months: cash / monthly, cash, monthly } : null;
-  return { savingsRate, averageRate, projection, runway, daysLeft: daysInMonth(month) - day };
+  return {
+    savingsRate,
+    averageRate,
+    projection,
+    runway,
+    daysLeft: daysInMonth(month) - day,
+    pace: spendingPace(transactions, today),
+    rates: savingsRates(transactions, month, 7),
+  };
 }
 
 /**
