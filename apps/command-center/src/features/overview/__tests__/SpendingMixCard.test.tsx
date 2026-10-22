@@ -1,9 +1,11 @@
-import { screen } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import type { SpendingRow } from '@/lib/domain/insights';
 import { renderWithProviders } from '@/test/render';
 import { SpendingMixCard } from '../SpendingMixCard';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() }, Link: () => null }));
+// The pie's draw-in animation is not under test; it would update after the test ends.
+jest.mock('@/hooks/useTween', () => ({ useTween: () => 1 }));
 
 const row = (id: string, amount: number, previous: number, share: number): SpendingRow => ({
   id,
@@ -30,6 +32,21 @@ describe('SpendingMixCard', () => {
     expect(
       screen.getByLabelText('Rent: ₹30,000, 60% of spending, no change vs 1–21 Sept.'),
     ).toBeTruthy();
+  });
+
+  it('opens a category in Stats when pressed', async () => {
+    const { router } = jest.requireMock('expo-router');
+    const { useExpenseUi } = jest.requireActual('@/features/expenses/state/expenseUi');
+    const food = { ...row('Food', 20_000_00, 15_000_00, 1), category: { id: 'Food' } };
+    await renderWithProviders(
+      <SpendingMixCard
+        spending={{ rows: [food as SpendingRow], total: 20_000_00, previousTotal: 0 }}
+        comparison="vs Sept"
+      />,
+    );
+    fireEvent.press(screen.getByRole('button', { name: /^Food:/ }));
+    expect(useExpenseUi.getState().drillCategoryId).toBe('Food');
+    expect(router.push).toHaveBeenCalledWith('/dashboard/expenses/stats');
   });
 
   it('says when nothing is spent yet', async () => {

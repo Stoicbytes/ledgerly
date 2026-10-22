@@ -299,8 +299,9 @@ per user, so **Undo last import** is still offered after a reload until it is us
   the last 12 months (gross and TDS in the tooltip) and the PF balance at each month end over
   the last 24 months. Without payslips or PF entries it offers Import payslips. Code:
   `SalaryPfCard.tsx`, `salaryOverview` in `lib/domain/insights/` (tested).
-- **Spending by category:** this month's five largest categories and Other on one scale, with
-  their share and the change against the same days of last month (`spendingMix`).
+- **Spending by category:** drawn like Expenses → Stats: a pie in rank colours and the ranking
+  with share badges for this month's five largest categories and Other, each with the change
+  against the same days of last month (`spendingMix`). Pressing a category opens it in Stats.
 - **This month:** three charted panels, then the insights in two groups.
   - **Income kept** (`monthPulse`, `savingsRates`): this month's share as a ring, against the
     six months before, and each of the last seven months as a bar (touch one for income and

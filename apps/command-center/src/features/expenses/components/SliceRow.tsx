@@ -21,6 +21,8 @@ type SliceRowProps = {
   /** The focused row (Stats › category › subcategory); announced as selected. */
   selected?: boolean;
   onHover?: (id: string | null) => void;
+  /** Second line under the name; the entry count by default. */
+  caption?: string;
 };
 
 /** Ranked category row (Money Manager style): share badge in the slice colour, name and amount. */
@@ -31,6 +33,7 @@ export function SliceRow({
   active = false,
   selected,
   onHover,
+  caption,
 }: SliceRowProps) {
   const theme = useTheme();
   const { hovered, focused, handlers } = useInteractionState();
@@ -89,7 +92,7 @@ export function SliceRow({
           {slice.name}
         </Text>
         <Text variant="caption" color="textTertiary" numberOfLines={1}>
-          {slice.count} {slice.count === 1 ? 'entry' : 'entries'}
+          {caption ?? `${slice.count} ${slice.count === 1 ? 'entry' : 'entries'}`}
         </Text>
       </View>
       <Text variant="label" numeric style={{ minWidth: 76, textAlign: 'right' }} numberOfLines={1}>

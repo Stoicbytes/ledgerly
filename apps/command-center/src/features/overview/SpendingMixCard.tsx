@@ -1,6 +1,11 @@
-import { Link, type Href } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
+import { PieChart } from '@/components/charts';
 import { Card, CardHeader, Text } from '@/components/ui';
+import { formatShare, SliceRow } from '@/features/expenses/components/SliceRow';
+import { useSliceColors } from '@/features/expenses/sliceColors';
+import { useExpenseUi } from '@/features/expenses/state/expenseUi';
 import type { SpendingRow } from '@/lib/domain/insights';
 import { formatMoneyWhole as money } from '@/lib/formatting/currency';
 import { useTheme } from '@/theme';
@@ -12,6 +17,8 @@ type SpendingMixCardProps = {
   index?: number;
 };
 
+const STATS = '/dashboard/expenses/stats' as Href;
+
 const change = (now: number, before: number) => {
   if (!before) return now ? 'new this month' : '';
   const delta = now - before;
@@ -20,15 +27,18 @@ const change = (now: number, before: number) => {
 };
 
 /**
- * This month's spending by category: the five largest and "Other" as bars on one scale,
- * each with its amount and the change against the same days of last month.
+ * This month's spending by category, drawn like Expenses → Stats: a pie in rank colours
+ * (largest first, "Other" grey) and the ranking with share badges, each with the change
+ * against the same days of last month. Pressing a category opens it in Stats.
  */
 export function SpendingMixCard({ spending, comparison, index = 9 }: SpendingMixCardProps) {
   const theme = useTheme();
   const { rows, total, previousTotal } = spending;
-  const largest = Math.max(1, ...rows.map((row) => row.amount));
+  const colors = useSliceColors(rows);
+  const drillInto = useExpenseUi((state) => state.drillInto);
+  const [hovered, setHovered] = useState<string | null>(null);
   return (
-    <Card index={index} style={{ gap: theme.space[4], flex: 1 }}>
+    <Card index={index} style={{ gap: theme.space[3], flex: 1 }}>
       <CardHeader
         title="Spending by category"
         subtitle={
@@ -37,44 +47,55 @@ export function SpendingMixCard({ spending, comparison, index = 9 }: SpendingMix
             : 'Nothing spent yet this month'
         }
         action={
-          <Link href={'/dashboard/expenses/stats' as Href} accessibilityLabel="Open spending stats">
+          <Link href={STATS} accessibilityLabel="Open spending stats">
             <Text variant="label" color="accent">
               Stats
             </Text>
           </Link>
         }
       />
-      {rows.map((row) => (
-        <View
-          key={row.id}
-          accessible
-          accessibilityLabel={`${row.name}: ${money(row.amount)}, ${Math.round(row.share * 100)}% of spending, ${change(row.amount, row.previous)}${row.previous ? ` ${comparison}` : ''}.`}
-          style={{ gap: 6 }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: theme.space[2] }}>
-            <Text variant="label" numberOfLines={1} style={{ flex: 1 }}>
-              {row.name}
-            </Text>
-            <Text variant="label" numeric>
-              {money(row.amount)}
-            </Text>
-          </View>
-          <View style={{ height: 8, borderRadius: 4, backgroundColor: theme.colors.surfaceMuted }}>
+      {rows.length ? (
+        <PieChart
+          height={240}
+          segments={rows.map((row, at) => ({
+            label: row.name,
+            value: row.amount,
+            color: colors[at],
+          }))}
+          activeLabel={hovered}
+          accessibilityLabel={`Spending by category this month, ${money(total)}. ${rows
+            .slice(0, 4)
+            .map((row) => `${row.name} ${formatShare(row.share)}`)
+            .join(', ')}.`}
+        />
+      ) : null}
+      <View>
+        {rows.map((row, at) => {
+          const caption = `${change(row.amount, row.previous)}${row.previous ? ` ${comparison}` : ''}`;
+          return (
             <View
-              style={{
-                width: `${(row.amount / largest) * 100}%`,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: theme.colors.chartPositive,
-              }}
-            />
-          </View>
-          <Text variant="caption" color="textSecondary">
-            {Math.round(row.share * 100)}% · {change(row.amount, row.previous)}
-            {row.previous ? ` ${comparison}` : ''}
-          </Text>
-        </View>
-      ))}
+              key={row.id}
+              accessibilityLabel={`${row.name}: ${money(row.amount)}, ${Math.round(row.share * 100)}% of spending, ${caption}.`}
+            >
+              <SliceRow
+                slice={row}
+                color={colors[at]}
+                caption={caption}
+                active={hovered === row.name}
+                onHover={setHovered}
+                onPress={
+                  row.category
+                    ? () => {
+                        drillInto(row.id);
+                        router.push(STATS);
+                      }
+                    : undefined
+                }
+              />
+            </View>
+          );
+        })}
+      </View>
     </Card>
   );
 }
